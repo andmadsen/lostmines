@@ -254,6 +254,23 @@
         "light_energy": 2.0,
         "light_range": 10.0
       }
+    },
+    {
+      "id": "stone_club",
+      "name": "Stone Club",
+      "type": "weapon",
+      "damage": "1d6",
+      "ability": "str",
+      "reach": 1.6,
+      "visual": {
+        "model": "res://assets/weapons/stone_club/scene.gltf",
+        "length": 0.75,
+        "flip": true,
+        "grip": 0.15,
+        "sheathe": "hip",
+        "mesh": "mace",
+        "color": "#7a6a5a"
+      }
     }
   ]
 }

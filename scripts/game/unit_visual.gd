@@ -59,8 +59,10 @@ func build(p_look: Dictionary) -> void:
 	_dead = false
 	var model_path := str(look.get("model", ""))
 	if model_path != "" and ResourceLoader.exists(model_path):
-		_build_model(model_path)
-		return
+		if _has_skeleton(model_path):
+			_build_model(model_path)
+			return
+		push_warning("Model %s has no skeleton (rig it in Mixamo and download 'With Skin'); using a placeholder." % model_path)
 	var s := float(look.get("scale", 1.0))
 	var w := float(look.get("width", 1.0))
 	body = Node3D.new()
@@ -115,6 +117,7 @@ func _build_model(path: String) -> void:
 	model = (load(path) as PackedScene).instantiate()
 	model.rotation.y = PI   # Mixamo models face +Z; units face -Z
 	body.add_child(model)
+	_apply_textures(model, look.get("textures", {}))
 	var skel: Skeleton3D = model.find_child("Skeleton3D", true, false)
 	anim_player = model.find_child("AnimationPlayer", true, false)
 	var set_id := str(look.get("animation_set", ""))
@@ -158,6 +161,46 @@ func _build_model(path: String) -> void:
 	head_slot = _bone_slot(skel, "mixamorig_Head", grip.get("head", {}))
 	extras = Node3D.new()
 	body.add_child(extras)
+
+
+static var _skel_cache: Dictionary = {}
+
+static func _has_skeleton(path: String) -> bool:
+	if not _skel_cache.has(path):
+		var n: Node = (load(path) as PackedScene).instantiate()
+		_skel_cache[path] = n.find_child("Skeleton3D", true, false) != null
+		n.free()
+	return _skel_cache[path]
+
+
+## Puts separately downloaded textures (look.textures) on a model whose own
+## materials were lost, e.g. after rigging it in Mixamo.
+func _apply_textures(root: Node, tex: Dictionary) -> void:
+	if tex.is_empty():
+		return
+	var m := StandardMaterial3D.new()
+	var load_tex := func(key: String) -> Texture2D:
+		var p := str(tex.get(key, ""))
+		return load(p) as Texture2D if p != "" and ResourceLoader.exists(p) else null
+	m.albedo_texture = load_tex.call("albedo")
+	var nt: Texture2D = load_tex.call("normal")
+	if nt:
+		m.normal_enabled = true
+		m.normal_texture = nt
+	var rt: Texture2D = load_tex.call("roughness")
+	if rt:
+		m.roughness_texture = rt
+		m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	var at: Texture2D = load_tex.call("ao")
+	if at:
+		m.ao_enabled = true
+		m.ao_texture = at
+		m.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.metallic = float(tex.get("metallic", 0.0))
+	var b := float(tex.get("brightness", 1.0))
+	m.albedo_color = Color(b, b, b)
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).material_override = m
 
 
 func _bone_slot(skel: Skeleton3D, bone: String, g: Dictionary) -> Node3D:

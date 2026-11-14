@@ -5,15 +5,48 @@
       "name": "Goblin",
       "hp": "2d6",
       "ac": 15,
-      "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
+      "abilities": {
+        "str": 8,
+        "dex": 14,
+        "con": 10,
+        "int": 10,
+        "wis": 8,
+        "cha": 8
+      },
       "speed": 3.2,
       "sight": 10,
       "xp": 50,
       "attacks": [
-        { "name": "Scimitar", "to_hit": 4, "damage": "1d6+2", "type": "slashing", "reach": 1.6 }
+        {
+          "name": "Stone Club",
+          "to_hit": 4,
+          "damage": "1d6+2",
+          "type": "bludgeoning",
+          "reach": 1.6
+        }
       ],
-      "look": { "skin": "#6f8a3a", "hair": "#222211", "scale": 0.7, "width": 1.0, "armor_color": "#4e3b26" },
-      "equipment": { "main_hand": "scimitar", "off_hand": "", "armor": "", "head": "" }
+      "look": {
+        "skin": "#6f8a3a",
+        "hair": "#222211",
+        "scale": 0.7,
+        "width": 1.0,
+        "armor_color": "#4e3b26",
+        "model": "res://assets/monsters/goblin/Goblin.fbx",
+        "animation_set": "goblin",
+        "textures": {
+          "albedo": "res://assets/monsters/goblin/textures/Goblin_Base_color.png",
+          "normal": "res://assets/monsters/goblin/textures/Goblin_Normal_OpenGL.png",
+          "roughness": "res://assets/monsters/goblin/textures/Goblin_Roughness.png",
+          "ao": "res://assets/monsters/goblin/textures/Goblin_Mixed_AO.png",
+          "metallic": 0.0
+        }
+      },
+      "equipment": {
+        "main_hand": "stone_club",
+        "off_hand": "",
+        "armor": "",
+        "head": ""
+      }
     }
   ]
 }

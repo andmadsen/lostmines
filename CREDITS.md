@@ -9,6 +9,7 @@ Third-party art used in Lost Mines. Files live in `assets/` (not in git).
 | Cool Bow (Pip's shortbow) | Incg5764 | https://sketchfab.com/3d-models/cool-bow-19efcbf24f254d37877a794aeedb43db | CC-BY-4.0 |
 | Mace (Keldrin's mace) | FlukierJupiter | https://sketchfab.com/3d-models/mace-558c534b79d24a8d8d1bf51cc13e0d67 | CC-BY-4.0 |
 | Medieval Shield (steel shield) | Artem Mykhailov | https://sketchfab.com/3d-models/medieval-shield-b98b8f64d935415aab0fe9b70074511f | CC-BY-4.0 |
+| Neolithic Stone Club (goblin club) | Asylum Nox | https://sketchfab.com/3d-models/neolithic-stone-club-4a14743e04cd46b9b5075af5997cc439 | CC-BY-4.0 |
 | Aurelia (character model) and animations | Mixamo (Adobe) | https://www.mixamo.com | Mixamo terms of use |
 
 "The Charger - Greatsword" (https://sketchfab.com/3d-models/the-charger-greatsword-87cf5fd5fcb446c1826dcf1b0ed1e2aa)
@@ -24,3 +25,4 @@ by Vlasov Daniil (https://sketchfab.com/dan741vlasov) is licensed under CC-BY-4.
 "Cool Bow" (https://sketchfab.com/3d-models/cool-bow-19efcbf24f254d37877a794aeedb43db) by Incg5764 is licensed under CC-BY-4.0. Pip's model (Erika Archer), Shirvani's and Keldrin's models and all animations are from Mixamo.
 "Mace" (https://sketchfab.com/3d-models/mace-558c534b79d24a8d8d1bf51cc13e0d67) by FlukierJupiter is licensed under CC-BY-4.0.
 "Medieval Shield" (https://sketchfab.com/3d-models/medieval-shield-b98b8f64d935415aab0fe9b70074511f) by Artem Mykhailov is licensed under CC-BY-4.0.
+"Neolithic Stone Club" (https://sketchfab.com/3d-models/neolithic-stone-club-4a14743e04cd46b9b5075af5997cc439) by Asylum Nox is licensed under CC-BY-4.0.
