@@ -43,6 +43,7 @@ var _dragging := false
 var _drag_active := false
 var _hover: Unit = null
 var _sighted := false
+var _arrows: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -139,6 +140,7 @@ func _process(delta: float) -> void:
 		for u in units:
 			u.tick(delta)
 		_separate()
+		_update_arrows(delta)
 	hud.refresh()
 
 
@@ -434,6 +436,99 @@ func _nearest_floor(c: Vector2i) -> Vector2i:
 				if cave.is_floor(x, y):
 					return Vector2i(x, y)
 	return c
+
+
+## True if a living hostile creature stands right next to u.
+func enemy_adjacent(u: Unit) -> bool:
+	for o in units:
+		if o.faction != u.faction and not o.down and (o.ai_state == "combat" or not o.is_monster) and o.global_position.distance_to(u.global_position) < 2.3:
+			return true
+	return false
+
+
+## Fires an arrow from shooter to target. on_hit runs when it arrives
+## (it logs the hit or miss and applies damage). Flight respects pause.
+func shoot_arrow(shooter: Unit, target: Unit, delay: float, hit: bool, on_hit: Callable) -> void:
+	_arrows.append({"shooter": shooter, "target": target, "delay": delay, "hit": hit, "cb": on_hit, "node": null, "t": 0.0})
+
+
+func _update_arrows(delta: float) -> void:
+	for i in range(_arrows.size() - 1, -1, -1):
+		var a: Dictionary = _arrows[i]
+		if a["node"] == null:
+			a["delay"] = float(a["delay"]) - delta
+			if float(a["delay"]) > 0.0:
+				continue
+			var sh: Unit = a["shooter"]
+			var tg: Unit = a["target"]
+			if not is_instance_valid(sh) or not is_instance_valid(tg):
+				_arrows.remove_at(i)
+				continue
+			var s := float(DataDB.heroes.get(sh.data_id, {}).get("look", {}).get("scale", 1.0)) if not sh.is_monster else 0.8
+			var start := sh.global_position + Vector3(0, 1.35 * s, 0) + (tg.global_position - sh.global_position).normalized() * 0.4
+			var end := tg.global_position + Vector3(0, 1.0, 0)
+			if not bool(a["hit"]):
+				var side := (end - start).cross(Vector3.UP).normalized() * randf_range(-0.9, 0.9)
+				end += side + (end - start).normalized() * 2.5 + Vector3(0, randf_range(-0.6, 0.3), 0)
+			a["start"] = start
+			a["end"] = end
+			a["dur"] = maxf(0.08, start.distance_to(end) / 32.0)
+			var node := _make_arrow()
+			add_child(node)
+			node.global_position = start
+			a["node"] = node
+		var n: Node3D = a["node"]
+		a["t"] = float(a["t"]) + delta
+		var k := clampf(float(a["t"]) / float(a["dur"]), 0.0, 1.0)
+		var st: Vector3 = a["start"]
+		var en: Vector3 = a["end"]
+		var pos := st.lerp(en, k) + Vector3(0, sin(k * PI) * st.distance_to(en) * 0.04, 0)
+		if pos.distance_to(n.global_position) > 0.001:
+			n.look_at_from_position(n.global_position, pos, Vector3.UP)
+		n.global_position = pos
+		if k >= 1.0:
+			(a["cb"] as Callable).call()
+			_arrows.remove_at(i)
+			var tw := create_tween()
+			tw.tween_interval(1.5)
+			tw.tween_callback(n.queue_free)
+
+
+func _make_arrow() -> Node3D:
+	var root := Node3D.new()
+	var shaft := MeshInstance3D.new()
+	var c := CylinderMesh.new()
+	c.top_radius = 0.008
+	c.bottom_radius = 0.008
+	c.height = 0.7
+	shaft.mesh = c
+	shaft.rotation = Vector3(-PI / 2, 0, 0)
+	shaft.position = Vector3(0, 0, 0.0)
+	shaft.material_override = UnitVisual.mat("#8a6a42", 0.0, 0.7)
+	root.add_child(shaft)
+	var head := MeshInstance3D.new()
+	var hc := CylinderMesh.new()
+	hc.top_radius = 0.0
+	hc.bottom_radius = 0.02
+	hc.height = 0.07
+	head.mesh = hc
+	head.rotation = Vector3(-PI / 2, 0, 0)
+	head.position = Vector3(0, 0, -0.38)
+	head.material_override = UnitVisual.mat("#c0c4c8", 0.8, 0.3)
+	root.add_child(head)
+	for k in 2:
+		var f := MeshInstance3D.new()
+		var q := QuadMesh.new()
+		q.size = Vector2(0.05, 0.12)
+		f.mesh = q
+		f.rotation = Vector3(0, PI / 2 * k, 0)
+		f.position = Vector3(0, 0, 0.3)
+		var fm := StandardMaterial3D.new()
+		fm.albedo_color = Color(0.85, 0.85, 0.8)
+		fm.cull_mode = BaseMaterial3D.CULL_DISABLED
+		f.material_override = fm
+		root.add_child(f)
+	return root
 
 
 ## True if an alerted, living enemy is within 15 m.

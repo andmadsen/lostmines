@@ -28,6 +28,44 @@ func _process(_d: float) -> void:
 			_save("fight2")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "bowshot":
+		var p: Unit = scene.party[1]
+		if frame == 5:
+			p.global_position = Vector3(23, 0, 20)
+			p.rotation.y = 0.0
+			scene.rig.focus(Vector3(23.5, 0, 18.5))
+			scene.rig._target_distance = 4.0
+			scene.rig.distance = 4.0
+			scene.rig.pitch = deg_to_rad(-15.0)
+			scene.rig.yaw = deg_to_rad(60.0)
+			scene.rig.focus(Vector3(23, 0.8, 19.5))
+			scene.paused = false
+		if frame > 5 and scene.paused: scene.paused = false
+		if frame == 45:
+			_save("bow_idle")
+			p.order_attack(scene.units[4])
+		if frame == 62:
+			_save("bow_draw")
+			var ap: AnimationPlayer = p.visual.anim_player
+			print("anim ", ap.current_animation, " pos ", ap.current_animation_position, " len ", ap.current_animation_length, " rot ", p.rotation_degrees.y, " target dir ", rad_to_deg(atan2(scene.units[4].global_position.x-23, scene.units[4].global_position.z-20)), " list ", ap.get_animation_list())
+		if frame == 76:
+			_save("bow_arrow")
+			print(scene.hud.log_label.get_parsed_text())
+			get_tree().quit()
+	elif plan == "bowlogic":
+		var p: Unit = scene.party[1]
+		if frame == 5:
+			Engine.max_fps = 60
+			print("pip weapon: ", p.attack_profile(), " speed ", p.speed, " elandor off: ", scene.party[3].equipment.get("off_hand"))
+			p.global_position = Vector3(23, 0, 20)
+			var g: Unit = scene.units[4]
+			print("distance to goblin: ", p.global_position.distance_to(g.global_position), " LOS ", scene.line_of_sight(p.global_position, g.global_position))
+			p.order_attack(g)
+		if frame > 5 and scene.paused: scene.paused = false
+		if frame == 5 + 60 * 10:
+			print(scene.hud.log_label.get_parsed_text())
+			print("pip pos ", p.global_position, " arrows in flight ", scene._arrows.size())
+			get_tree().quit()
 	elif plan == "draw":
 		var a: Unit = scene.party[0]
 		if frame == 5:

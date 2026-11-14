@@ -36,6 +36,10 @@ var _walk_ref_speed := 1.5
 var _attack_len := 1.0
 var back_slot: Node3D = null      ## where the main weapon rests when sheathed
 var _main_weapon: Node3D = null
+var _main_slot: Node3D = null      ## the hand the main weapon is held in
+var _main_sheathes := true         ## false for bows: they stay in hand
+var attack_speed := 1.4
+var release_frac := 0.5            ## when in the attack animation an arrow leaves
 var armed := true
 var _flicker_seed := randf() * 100.0
 
@@ -113,7 +117,9 @@ func _build_model(path: String) -> void:
 	var aset: Dictionary = DataDB.animation_sets.get(set_id, {})
 	if set_id != "" and aset.is_empty():
 		push_warning("Animation set '%s' not found in data/animations.json" % set_id)
-	_walk_ref_speed = float(aset.get("walk_speed", 1.5))
+	_walk_ref_speed = float(aset.get("walk_speed", 1.5)) * float(look.get("scale", 1.0))
+	release_frac = float(aset.get("release", 0.5))
+	attack_speed = float(aset.get("attack_speed", 1.4))
 	if anim_player:
 		for key in ["idle", "walk", "attack", "death"]:
 			var p := str(aset.get(key, ""))
@@ -216,11 +222,14 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 func _attach_items(equipment: Dictionary) -> void:
 	var main := DataDB.item(str(equipment.get("main_hand", "")))
 	if not main.is_empty():
-		_main_weapon = weapon_mesh(main.get("visual", {}))
-		if using_model and back_slot and not armed:
+		var mv: Dictionary = main.get("visual", {})
+		_main_weapon = weapon_mesh(mv)
+		_main_slot = hand_l if str(mv.get("hand", "right")) == "left" else hand_r
+		_main_sheathes = bool(mv.get("sheathe", true)) and back_slot != null
+		if using_model and _main_sheathes and not armed:
 			back_slot.add_child(_main_weapon)
 		else:
-			hand_r.add_child(_main_weapon)
+			_main_slot.add_child(_main_weapon)
 	var off := DataDB.item(str(equipment.get("off_hand", "")))
 	if not off.is_empty():
 		if str(off.get("type", "")) == "light":
@@ -389,9 +398,19 @@ func set_armed(v: bool) -> void:
 	if not using_model or back_slot == null or v == armed:
 		armed = v if not using_model else armed
 		return
+	if not _main_sheathes:
+		armed = true
+		return
 	armed = v
 	if _main_weapon and is_instance_valid(_main_weapon):
-		_main_weapon.reparent(hand_r if v else back_slot, false)
+		_main_weapon.reparent(_main_slot if v else back_slot, false)
+
+
+## Seconds from the start of an attack until an arrow is released.
+func release_time() -> float:
+	if using_model:
+		return _attack_len / attack_speed * release_frac
+	return 0.15
 
 
 func swing() -> void:
@@ -400,8 +419,8 @@ func swing() -> void:
 		if anim_player and anim_player.has_animation("attack/attack"):
 			anim_player.play("attack/attack", 0.1)
 			anim_player.seek(0.0, true)
-			anim_player.speed_scale = 1.4
-			_swing = _attack_len / 1.4
+			anim_player.speed_scale = attack_speed
+			_swing = _attack_len / attack_speed
 		return
 	_swing = 0.4
 

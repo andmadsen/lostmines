@@ -69,6 +69,7 @@ func setup_monster(id: String) -> void:
 
 func _apply_hero_data(d: Dictionary, first: bool) -> void:
 	abilities = d.get("abilities", {})
+	speed = float(d.get("speed", 3.0))
 	var new_max := int(d.get("hp", 10))
 	if first:
 		max_hp = new_max
@@ -172,7 +173,9 @@ func attack_profile() -> Dictionary:
 	var dmg := str(w.get("damage", "1d4"))
 	if m2 != 0:
 		dmg += Rules.signed(m2)
-	return {"name": str(w.get("name", "Weapon")), "to_hit": Rules.PROFICIENCY + m2, "damage": dmg, "reach": float(w.get("reach", 1.6))}
+	var ranged := bool(w.get("ranged", false))
+	var reach := float(w.get("range", 24.0)) if ranged else float(w.get("reach", 1.6))
+	return {"name": str(w.get("name", "Weapon")), "to_hit": Rules.PROFICIENCY + m2, "damage": dmg, "reach": reach, "ranged": ranged}
 
 
 func alive() -> bool:
@@ -220,9 +223,10 @@ func tick(delta: float) -> void:
 			stop()
 		else:
 			var prof := attack_profile()
+			var ranged := bool(prof.get("ranged", false))
 			var reach := float(prof.get("reach", 1.6)) + 0.35
 			var dist := _flat(global_position).distance_to(_flat(target.global_position))
-			if dist <= reach:
+			if dist <= reach and (not ranged or game.line_of_sight(global_position, target.global_position)):
 				path.clear()
 				_face(target.global_position)
 				if cooldown <= 0.0:
@@ -281,22 +285,40 @@ func _flat(v: Vector3) -> Vector2:
 # ---------------- combat ----------------
 func _attack(t: Unit, prof: Dictionary) -> void:
 	visual.swing()
+	var ranged := bool(prof.get("ranged", false))
+	# D&D: a ranged attack with a hostile creature next to you has disadvantage
+	var disadvantage: bool = ranged and game.enemy_adjacent(self)
 	var r := Rules.d(20)
+	var roll_txt := ""
+	if disadvantage:
+		var r2 := Rules.d(20)
+		roll_txt = "[%d, %d] " % [r, r2]
+		r = mini(r, r2)
 	var to_hit := int(prof.get("to_hit", 0))
 	var total := r + to_hit
 	var crit := r == 20
 	var hit := r != 1 and (crit or total >= t.ac())
 	var who: String = game.name_tag(self)
 	var tgt: String = game.name_tag(t)
-	var roll_txt := "%d%s = %d" % [r, Rules.signed(to_hit), total]
-	if hit:
-		var dmg := Rules.roll(str(prof.get("damage", "1d4")), crit)
-		game.log_line("%s → %s: %s %s vs AC %d — [color=#ffd35a]%s[/color] (%d)" % [who, tgt, prof.get("name", ""), roll_txt, t.ac(), "CRITICAL HIT" if crit else "Hit", dmg])
-		game.sfx_hit(t.global_position)
-		t.take_damage(dmg, self, crit)
+	roll_txt += "%d%s = %d" % [r, Rules.signed(to_hit), total]
+	var dis_txt := " [color=#ff9f9f](disadvantage: enemy adjacent)[/color]" if disadvantage else ""
+	var dmg := Rules.roll(str(prof.get("damage", "1d4")), crit) if hit else 0
+	var wname := str(prof.get("name", ""))
+	var target_ac := t.ac()
+	var resolve := func():
+		if not is_instance_valid(t) or t.down:
+			return
+		if hit:
+			game.log_line("%s → %s: %s %s vs AC %d%s — [color=#ffd35a]%s[/color] (%d)" % [who, tgt, wname, roll_txt, target_ac, dis_txt, "CRITICAL HIT" if crit else "Hit", dmg])
+			game.sfx_hit(t.global_position)
+			t.take_damage(dmg, self, crit)
+		else:
+			game.log_line("%s → %s: %s %s vs AC %d%s — [color=#9a9a9a]Miss[/color]" % [who, tgt, wname, roll_txt, target_ac, dis_txt])
+			game.float_text(t.global_position + Vector3(0, 2.0, 0), "Miss", Color(0.75, 0.75, 0.75))
+	if ranged:
+		game.shoot_arrow(self, t, visual.release_time(), hit, resolve)
 	else:
-		game.log_line("%s → %s: %s %s vs AC %d — [color=#9a9a9a]Miss[/color]" % [who, tgt, prof.get("name", ""), roll_txt, t.ac()])
-		game.float_text(t.global_position + Vector3(0, 2.0, 0), "Miss", Color(0.75, 0.75, 0.75))
+		resolve.call()
 	if t.is_monster and t.ai_state == "idle":
 		t.alert(self)
 
@@ -327,7 +349,8 @@ func _party_ai() -> void:
 	if cooldown > 0.3:
 		return
 	var best: Unit = null
-	var bd := 9.0
+	var prof := attack_profile()
+	var bd := 24.0 if bool(prof.get("ranged", false)) else 9.0
 	for u in game.units:
 		if u.faction != "enemy" or u.down or u.ai_state != "combat":
 			continue

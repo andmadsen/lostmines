@@ -110,6 +110,31 @@
       }
     },
     {
+      "id": "shortbow",
+      "name": "Shortbow",
+      "type": "weapon",
+      "ranged": true,
+      "two_handed": true,
+      "damage": "1d6",
+      "ability": "dex",
+      "range": 24.0,
+      "reach": 24.0,
+      "visual": {
+        "model": "res://assets/weapons/bow/scene.gltf",
+        "length": 1.05,
+        "grip": 0.5,
+        "hand": "left",
+        "sheathe": false,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "mesh": "staff",
+        "color": "#6a4a2a"
+      }
+    },
+    {
       "id": "wizard_robe",
       "name": "Wizard Robe",
       "type": "armor",

@@ -59,17 +59,21 @@
         "skin": "#e8b892",
         "hair": "#a0602a",
         "scale": 0.72,
-        "width": 1.0
+        "width": 1.0,
+        "model": "res://assets/characters/pip.fbx",
+        "animation_set": "bow"
       },
       "equipment": {
-        "main_hand": "shortsword",
-        "off_hand": "torch",
+        "main_hand": "shortbow",
+        "off_hand": "",
         "armor": "leather_armor",
         "head": ""
       },
       "inventory": [
+        "shortsword",
         "dagger"
-      ]
+      ],
+      "speed": 2.6
     },
     {
       "id": "dagna",
@@ -123,7 +127,7 @@
       },
       "equipment": {
         "main_hand": "quarterstaff",
-        "off_hand": "",
+        "off_hand": "torch",
         "armor": "wizard_robe",
         "head": ""
       },
