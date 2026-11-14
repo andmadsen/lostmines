@@ -1,8 +1,9 @@
 class_name UnitVisual
 extends Node3D
-## Placeholder figure built from primitive shapes, with real equipment slots
-## (main hand, off hand, head, armor). Later the primitives are swapped for
-## rigged models; the slots and equipment logic stay the same.
+## A unit's body. Either a rigged model (e.g. from Mixamo, set by "model" in
+## the look data) with animations, or a placeholder built from primitive
+## shapes. Both expose the same equipment slots (main hand, off hand, head),
+## so weapons, shields, helmets and torches attach the same way.
 
 var look: Dictionary = {}
 
@@ -25,6 +26,14 @@ var _phase := 0.0
 var _swing := 0.0
 var _dead := false
 var held_light: OmniLight3D = null
+
+# rigged model
+var using_model := false
+var model: Node3D
+var anim_player: AnimationPlayer
+var move_speed := 3.0
+var _walk_ref_speed := 1.5
+var _attack_len := 1.0
 var _flicker_seed := randf() * 100.0
 
 static var _mat_cache: Dictionary = {}
@@ -34,6 +43,13 @@ func build(p_look: Dictionary) -> void:
 	look = p_look
 	for c in get_children():
 		c.queue_free()
+	using_model = false
+	held_light = null
+	_dead = false
+	var model_path := str(look.get("model", ""))
+	if model_path != "" and ResourceLoader.exists(model_path):
+		_build_model(model_path)
+		return
 	var s := float(look.get("scale", 1.0))
 	var w := float(look.get("width", 1.0))
 	body = Node3D.new()
@@ -78,12 +94,81 @@ func build(p_look: Dictionary) -> void:
 	body.add_child(extras)
 
 
+## Rigged model: instance it, add animations from the animation set, and put
+## equipment slots on the hand and head bones.
+func _build_model(path: String) -> void:
+	using_model = true
+	body = Node3D.new()
+	body.scale = Vector3.ONE * float(look.get("scale", 1.0))
+	add_child(body)
+	model = (load(path) as PackedScene).instantiate()
+	model.rotation.y = PI   # Mixamo models face +Z; units face -Z
+	body.add_child(model)
+	var skel: Skeleton3D = model.find_child("Skeleton3D", true, false)
+	anim_player = model.find_child("AnimationPlayer", true, false)
+	var aset: Dictionary = DataDB.animation_sets.get(str(look.get("animation_set", "")), {})
+	_walk_ref_speed = float(aset.get("walk_speed", 1.5))
+	if anim_player:
+		for key in ["idle", "walk", "attack", "death"]:
+			var p := str(aset.get(key, ""))
+			if p == "" or not ResourceLoader.exists(p):
+				continue
+			var src: Node = (load(p) as PackedScene).instantiate()
+			var sap: AnimationPlayer = src.find_child("AnimationPlayer", true, false)
+			if sap and sap.get_animation_list().size() > 0:
+				var anim: Animation = sap.get_animation(sap.get_animation_list()[0]).duplicate()
+				anim.loop_mode = Animation.LOOP_LINEAR if key in ["idle", "walk"] else Animation.LOOP_NONE
+				if key == "attack":
+					_attack_len = anim.length
+				var lib := AnimationLibrary.new()
+				lib.add_animation(key, anim)
+				if anim_player.has_animation_library(key):
+					anim_player.remove_animation_library(key)
+				anim_player.add_animation_library(key, lib)
+			src.free()
+		_play("idle", 0.0)
+	var grip: Dictionary = aset.get("grip", {})
+	hand_r = _bone_slot(skel, "mixamorig_RightHand", grip.get("right", {}))
+	hand_l = _bone_slot(skel, "mixamorig_LeftHand", grip.get("left", {}))
+	head_slot = _bone_slot(skel, "mixamorig_Head", grip.get("head", {}))
+	extras = Node3D.new()
+	body.add_child(extras)
+
+
+func _bone_slot(skel: Skeleton3D, bone: String, g: Dictionary) -> Node3D:
+	var slot := Node3D.new()
+	if skel == null or skel.find_bone(bone) < 0:
+		body.add_child(slot)
+		return slot
+	var ba := BoneAttachment3D.new()
+	ba.bone_name = bone
+	skel.add_child(ba)
+	var p: Array = g.get("position", [0, 0, 0])
+	var r: Array = g.get("rotation", [0, 0, 0])
+	slot.position = Vector3(p[0], p[1], p[2])
+	slot.rotation_degrees = Vector3(r[0], r[1], r[2])
+	ba.add_child(slot)
+	return slot
+
+
+func _play(name_: String, blend := 0.2) -> void:
+	if anim_player == null:
+		return
+	var full := "%s/%s" % [name_, name_]
+	if anim_player.has_animation(full) and anim_player.current_animation != full:
+		anim_player.play(full, blend)
+
+
 ## Applies equipment: a Dictionary slot -> item id, looked up in DataDB.
 func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 	_clear(hand_r)
 	_clear(hand_l)
 	_clear(head_slot)
 	_clear(extras)
+	held_light = null
+	if using_model:
+		_attach_items(equipment)
+		return
 	var armor := DataDB.item(str(equipment.get("armor", "")))
 	var av: Dictionary = armor.get("visual", {})
 	var style := str(av.get("style", "none"))
@@ -111,18 +196,22 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 		belt.material_override = mat("#3a2414", 0.0, 0.6)
 		extras.add_child(belt)
 
+	_attach_items(equipment)
+
+
+func _attach_items(equipment: Dictionary) -> void:
 	var main := DataDB.item(str(equipment.get("main_hand", "")))
 	if not main.is_empty():
 		hand_r.add_child(weapon_mesh(main.get("visual", {})))
 	var off := DataDB.item(str(equipment.get("off_hand", "")))
-	held_light = null
 	if not off.is_empty():
 		if str(off.get("type", "")) == "light":
 			hand_l.add_child(torch_mesh(off.get("visual", {})))
 		else:
 			hand_l.add_child(shield_mesh(off.get("visual", {})))
 	var helm := DataDB.item(str(equipment.get("head", "")))
-	hair.visible = helm.is_empty()
+	if hair:
+		hair.visible = helm.is_empty()
 	if not helm.is_empty():
 		var hv: Dictionary = helm.get("visual", {})
 		var hm := _mesh(head_slot, _sphere(0.175, true), Vector3(0, 0.02, 0), mat(str(hv.get("color", "#9aa2aa")), 0.9, 0.35))
@@ -134,6 +223,8 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 		nose.position = Vector3(0, -0.04, -0.17)
 		nose.material_override = hm.material_override
 		head_slot.add_child(nose)
+
+
 
 
 func weapon_mesh(v: Dictionary) -> Node3D:
@@ -170,6 +261,8 @@ func weapon_mesh(v: Dictionary) -> Node3D:
 func torch_mesh(v: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	root.rotation = Vector3(-0.35, 0, 0)
+	if using_model:
+		root.rotation = Vector3(0, 0, -PI / 2 - 0.3)   # undo the forward grip so the torch points up
 	var stick := MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 0.035
@@ -216,12 +309,30 @@ func shield_mesh(v: Dictionary) -> Node3D:
 	root.add_child(face)
 	var boss := _mesh(root, _sphere(0.06), Vector3(-0.11, 0.05, -0.05), mat(str(v.get("rim", "#8a8f96")), 0.9, 0.3))
 	boss.scale = Vector3(0.6, 1, 1)
+	if using_model:
+		# stand the shield up against the back of the forearm
+		root.rotation = Vector3(0, PI / 2, 0)
+		root.position = Vector3(-0.12, 0.0, -0.02)
 	return root
 
 
 # ---------------- animation ----------------
 func _process(delta: float) -> void:
 	if body == null or _dead:
+		return
+	if using_model:
+		_flicker()
+		if _swing > 0.0:
+			_swing -= delta
+			if _swing <= 0.0:
+				anim_player.speed_scale = 1.0
+			return
+		if walk_amount > 0.3:
+			_play("walk")
+			anim_player.speed_scale = clampf(move_speed / _walk_ref_speed, 0.5, 2.5)
+		else:
+			_play("idle")
+			anim_player.speed_scale = 1.0
 		return
 	_phase += delta * 9.0 * walk_amount
 	var sw := sin(_phase) * 0.55 * walk_amount
@@ -232,8 +343,7 @@ func _process(delta: float) -> void:
 		# torch held forward; it sways with each step so the shadows swing
 		arm_l.rotation.x = -1.05 + sin(_phase * 0.5) * 0.12 * walk_amount + sin(now * 1.3 + _flicker_seed) * 0.03
 		arm_l.rotation.z = -0.25
-		var base := float(held_light.get_meta("base_energy", 2.0))
-		held_light.light_energy = base * (0.86 + 0.08 * sin(now * 12.0 + _flicker_seed) + 0.06 * sin(now * 27.0 + _flicker_seed * 2.0))
+		_flicker()
 	else:
 		arm_l.rotation.x = -sw * 0.6
 		arm_l.rotation.z = 0.0
@@ -246,18 +356,41 @@ func _process(delta: float) -> void:
 		arm_r.rotation.x = lerpf(arm_r.rotation.x, sw * 0.6 - 0.25, 0.2)
 
 
+func _flicker() -> void:
+	if held_light == null or not is_instance_valid(held_light):
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	var base := float(held_light.get_meta("base_energy", 2.0))
+	held_light.light_energy = base * (0.86 + 0.08 * sin(now * 12.0 + _flicker_seed) + 0.06 * sin(now * 27.0 + _flicker_seed * 2.0))
+
+
 func swing() -> void:
+	if using_model:
+		if anim_player and anim_player.has_animation("attack/attack"):
+			anim_player.play("attack/attack", 0.1)
+			anim_player.seek(0.0, true)
+			anim_player.speed_scale = 1.4
+			_swing = _attack_len / 1.4
+		return
 	_swing = 0.4
 
 
 func die() -> void:
 	_dead = true
+	if using_model:
+		if anim_player:
+			anim_player.speed_scale = 1.0
+		_play("death", 0.15)
+		return
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(body, "rotation:x", PI / 2, 0.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	tw.tween_property(body, "position:y", 0.15, 0.5)
 
 
 func knock_down() -> void:
+	if using_model:
+		die()
+		return
 	_dead = true
 	var tw := create_tween()
 	tw.tween_property(body, "rotation:x", PI / 2.2, 0.4)

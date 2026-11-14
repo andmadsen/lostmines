@@ -19,7 +19,9 @@
         "skin": "#f0c8a8",
         "hair": "#e8c66a",
         "scale": 1.0,
-        "width": 1.0
+        "width": 1.0,
+        "model": "res://assets/characters/aurelia.fbx",
+        "animation_set": "humanoid_melee"
       },
       "equipment": {
         "main_hand": "longsword",

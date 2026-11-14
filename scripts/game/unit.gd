@@ -14,7 +14,7 @@ var abilities: Dictionary = {}
 var max_hp := 10
 var hp := 10
 var base_ac := 10        ## monsters: fixed AC from data
-var speed := 3.6         ## metres per second
+var speed := 3.0         ## metres per second
 var sight := 10.0
 var xp_value := 0
 var equipment: Dictionary = {}
@@ -119,6 +119,7 @@ func _build_visual(lk: Dictionary) -> void:
 		ring.material_override = m
 		add_child(ring)
 	visual.build(lk)
+	visual.move_speed = speed
 	set_selected(selected)
 
 

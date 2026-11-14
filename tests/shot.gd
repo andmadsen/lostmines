@@ -28,6 +28,27 @@ func _process(_d: float) -> void:
 			_save("fight2")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "model":
+		var a: Unit = scene.party[0]
+		if frame == 5:
+			scene.rig.focus(a.global_position)
+			scene.rig._target_distance = 5.5
+			scene.rig.distance = 5.5
+			scene.rig.pitch = deg_to_rad(-25.0)
+			scene.rig.yaw = PI + 0.5
+			scene.paused = false
+		if frame == 50:
+			_save("model_idle")
+			a.order_move(a.global_position + Vector3(-2, 0, 3))
+		if frame > 50 and frame < 75:
+			scene.rig.focus(a.global_position)
+		if frame == 68:
+			_save("model_walk")
+		if frame == 90:
+			a.visual.swing()
+		if frame == 104:
+			_save("model_attack")
+			get_tree().quit()
 	elif plan == "shadow":
 		if frame == 5:
 			scene.rig.focus(Vector3(23, 0, 24))
