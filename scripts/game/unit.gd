@@ -17,6 +17,7 @@ var base_ac := 10        ## monsters: fixed AC from data
 var speed := 3.0         ## metres per second
 var sight := 10.0
 var xp_value := 0
+var xp := 0              ## heroes: experience earned
 var equipment: Dictionary = {}
 var inventory: Array = []
 var monster_attack: Dictionary = {}
@@ -75,6 +76,7 @@ func _apply_hero_data(d: Dictionary, first: bool) -> void:
 	speed = float(d.get("speed", 3.0))
 	if first:
 		spell_slots = int(d.get("spell_slots", 0))
+		xp = int(d.get("xp", 0))
 	var new_max := int(d.get("hp", 10))
 	if first:
 		max_hp = new_max
@@ -415,6 +417,7 @@ func take_damage(dmg: int, src: Unit, crit := false) -> void:
 		if is_monster:
 			visual.die()
 			game.log_line("%s dies. [color=#ffe07a]+%d XP[/color]" % [game.name_tag(self), xp_value])
+			game.award_xp(xp_value)
 		else:
 			visual.knock_down()
 			game.log_line("%s falls unconscious!" % game.name_tag(self))

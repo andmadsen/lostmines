@@ -210,7 +210,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_C:
 				use_action("cure_wounds")
 			KEY_ESCAPE:
-				cancel_targeting()
+				if hud.sheet.visible:
+					hud.sheet.close()
+				else:
+					cancel_targeting()
+			KEY_I:
+				toggle_sheet()
 			KEY_F5:
 				get_tree().reload_current_scene()
 			KEY_A:
@@ -344,6 +349,63 @@ func _update_hover(pos: Vector2) -> void:
 		hud.show_tooltip(txt, pos)
 	else:
 		hud.show_tooltip("", pos)
+
+
+# ---------------- character record ----------------
+func toggle_sheet() -> void:
+	hud.sheet.game = self
+	if hud.sheet.visible:
+		hud.sheet.close()
+	else:
+		hud.sheet.open(selection[0] if not selection.is_empty() else party[0])
+
+
+## Experience from a slain monster is shared by the heroes still standing.
+func award_xp(amount: int) -> void:
+	var alive := party.filter(func(u): return not u.down)
+	if alive.is_empty() or amount <= 0:
+		return
+	var share := int(ceil(float(amount) / alive.size()))
+	for u in alive:
+		u.xp += share
+
+
+## Puts an item from the pack on, in the slot that fits it.
+func equip_item(u: Unit, id: String) -> void:
+	var it := DataDB.item(id)
+	var slot := ""
+	match str(it.get("type", "")):
+		"weapon": slot = "main_hand"
+		"armor": slot = "armor"
+		"shield", "light": slot = "off_hand"
+		"helmet": slot = "head"
+	if slot == "" or not u.inventory.has(id):
+		return
+	if slot == "off_hand" and bool(DataDB.item(str(u.equipment.get("main_hand", ""))).get("two_handed", false)):
+		log_line("%s needs both hands for the %s." % [name_tag(u), DataDB.item(str(u.equipment.get("main_hand", ""))).get("name", "weapon")])
+		return
+	u.inventory.erase(id)
+	var cur := str(u.equipment.get(slot, ""))
+	if cur != "":
+		u.inventory.append(cur)
+	u.equipment[slot] = id
+	if slot == "main_hand" and bool(it.get("two_handed", false)):
+		var off := str(u.equipment.get("off_hand", ""))
+		if off != "":
+			u.inventory.append(off)
+			u.equipment["off_hand"] = ""
+	u.visual.apply_equipment(u.equipment)
+	log_line("%s equips the %s." % [name_tag(u), it.get("name", id)])
+
+
+func unequip(u: Unit, slot: String) -> void:
+	var cur := str(u.equipment.get(slot, ""))
+	if cur == "":
+		return
+	u.equipment[slot] = ""
+	u.inventory.append(cur)
+	u.visual.apply_equipment(u.equipment)
+	log_line("%s puts away the %s." % [name_tag(u), DataDB.item(cur).get("name", cur)])
 
 
 # ---------------- action bar ----------------

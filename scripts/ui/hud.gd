@@ -27,6 +27,7 @@ var _portrait_rows: Array[Dictionary] = []
 var _buttons: Dictionary = {}
 var _action_key := ""
 var _action_slots: Dictionary = {}
+var sheet: CharacterSheet
 
 
 func _ready() -> void:
@@ -137,6 +138,7 @@ func _build_bottom_bar() -> void:
 	var sys := HBoxContainer.new()
 	sys.add_theme_constant_override("separation", 5)
 	side.add_child(sys)
+	_small(sys, "record", "record", "Character record  [I]\nStats, equipment and biography.", func(): game.toggle_sheet())
 	_small(sys, "pause", "pause", "Pause  [Space]\nGive orders while time stands still.", func(): game.toggle_pause())
 	_small(sys, "help", "help", "Help  [H]", func(): help_panel.visible = not help_panel.visible)
 	_small(sys, "reset", "restart", "Restart  [F5]", func(): game.get_tree().reload_current_scene())
@@ -186,11 +188,15 @@ func _build_overlays() -> void:
 		+ "[color=#dcb35c]Right click / Esc[/color]  cancel a target choice\n" \
 		+ "[color=#dcb35c]Space[/color]  pause — give orders while time stands still\n" \
 		+ "[color=#dcb35c]WASD / screen edge[/color]  move the camera · [color=#dcb35c]Q / E[/color] rotate · [color=#dcb35c]wheel[/color] zoom · [color=#dcb35c]F[/color] focus\n" \
+		+ "[color=#dcb35c]I[/color] or right click a portrait: character record\n" \
 		+ "[color=#dcb35c]X[/color] stop · [color=#dcb35c]C[/color] Cure Wounds · [color=#dcb35c]F5[/color] restart · [color=#dcb35c]H[/color] this help\n\n" \
 		+ "[i]Edit data/*.json while the game runs — changes load within a second.[/i]"
 	help_panel.add_child(ht)
 	help_panel.visible = false
 	root.add_child(help_panel)
+
+	sheet = CharacterSheet.new()
+	root.add_child(sheet)
 
 
 func _small(parent: Control, key: String, icon_name: String, tip: String, cb: Callable) -> void:
@@ -265,8 +271,11 @@ func _portrait_card(u: Unit) -> Control:
 			game.portrait_clicked(unit, ev.shift_pressed)
 			if ev.double_click:
 				game.rig.focus(unit.global_position)
+		elif ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT:
+			sheet.game = game
+			sheet.open(unit)
 	)
-	card.tooltip_text = "%s\n%s %s" % [u.display_name, d.get("race", ""), d.get("class", "")]
+	card.tooltip_text = "%s\n%s %s\nRight click: character record" % [u.display_name, d.get("race", ""), d.get("class", "")]
 	_portrait_rows.append({"unit": u, "frame": frame, "bar": bar, "hp": hp, "view": pv})
 	return card
 

@@ -107,6 +107,24 @@ func _process(_d: float) -> void:
 		if frame == 60:
 			_save("gob_attack2")
 			get_tree().quit()
+	elif plan == "sheet":
+		if frame == 5:
+			scene.paused = false
+			scene.party[2].take_damage(4, null)
+			scene.party[2].xp = 50
+			scene.select_unit(scene.party[2])
+			scene.toggle_sheet()
+		if frame == 40:
+			_save("sheet_keldrin")
+			scene.hud.sheet._step(-2)
+		if frame == 60:
+			_save("sheet_aurelia")
+			scene.equip_item(scene.party[0], "wooden_shield")
+			scene.hud.sheet.rebuild()
+			print("aurelia main ", scene.party[0].equipment)
+		if frame == 80:
+			_save("sheet_aurelia2")
+			get_tree().quit()
 	elif plan == "uilogic":
 		if frame == 5:
 			Engine.max_fps = 60

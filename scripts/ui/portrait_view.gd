@@ -8,9 +8,11 @@ var visual: UnitVisual
 var camera: Camera3D
 var _equip_key := ""
 var _frames := 0
+var full_body := false   ## whole figure, slowly turning (character sheet)
 
 
-func setup(look: Dictionary, equipment: Dictionary, size_px: Vector2i) -> void:
+func setup(look: Dictionary, equipment: Dictionary, size_px: Vector2i, whole := false) -> void:
+	full_body = whole
 	stretch = true
 	custom_minimum_size = size_px
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -44,6 +46,9 @@ func setup(look: Dictionary, equipment: Dictionary, size_px: Vector2i) -> void:
 	rim.light_energy = 1.2
 	rim.rotation_degrees = Vector3(-15, -20, 0)
 	viewport.add_child(rim)
+	if whole:
+		rim.light_energy = 0.6
+		key.light_energy = 1.8
 
 	visual = UnitVisual.new()
 	viewport.add_child(visual)
@@ -66,7 +71,9 @@ func update_equipment(equipment: Dictionary) -> void:
 	visual.apply_equipment(equipment)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if full_body and visual:
+		visual.rotation.y += delta * 0.35
 	# frame the head once the idle animation has settled the pose
 	if _frames < 12 and is_inside_tree():
 		_frames += 1
@@ -84,6 +91,11 @@ func _frame_head() -> void:
 		if hb >= 0:
 			head = skel.global_transform * skel.get_bone_global_pose(hb).origin
 			head.y += 0.07 * s
+	if full_body:
+		var mid := Vector3(0, head.y * 0.52, 0)
+		var dist := head.y * 0.62 / tan(deg_to_rad(camera.fov * 0.5))
+		camera.look_at_from_position(mid + Vector3(0, head.y * 0.08, -dist), mid, Vector3.UP)
+		return
 	# the unit faces -Z: look at the face from the front, slightly to its right
 	var eye := head + Vector3(0.22, 0.03, -0.95) * s
 	camera.look_at_from_position(eye, head + Vector3(0, -0.06 * s, 0), Vector3.UP)
