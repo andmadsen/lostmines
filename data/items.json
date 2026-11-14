@@ -264,7 +264,7 @@
       "reach": 1.6,
       "visual": {
         "model": "res://assets/weapons/stone_club/scene.gltf",
-        "length": 0.75,
+        "length": 1.9,
         "flip": true,
         "grip": 0.15,
         "sheathe": "hip",

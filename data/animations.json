@@ -241,9 +241,9 @@
     {
       "id": "goblin",
       "idle": "res://assets/monsters/goblin/idle.fbx",
-      "walk": "res://assets/monsters/goblin/Walk.fbx",
+      "walk": "res://assets/monsters/goblin/walk.fbx",
       "attack": "res://assets/monsters/goblin/attack.fbx",
-      "death": "res://assets/monsters/goblin/Dying.fbx",
+      "death": "res://assets/monsters/goblin/death.fbx",
       "walk_speed": 1.5,
       "grip": {
         "right": {

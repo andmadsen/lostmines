@@ -80,6 +80,33 @@ func _process(_d: float) -> void:
 				var ab: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
 				print("mesh ", mi.name, " center ", inv * ab.get_center(), " size ", ab.size, " visible ", (mi as MeshInstance3D).is_visible_in_tree())
 			get_tree().quit()
+	elif plan == "goblin":
+		var g: Unit = scene.units[4]
+		var a: Unit = scene.party[0]
+		if frame == 5:
+			g.ai_state = "idle"
+			g.sight = 0.0
+			a.global_position = g.global_position + Vector3(8, 0, 0)
+			g.visual.set_armed(true)
+			scene.rig.focus(g.global_position + Vector3(0, 0.5, 0))
+			scene.rig._target_distance = 3.0
+			scene.rig.distance = 3.0
+			scene.rig.pitch = deg_to_rad(-22.0)
+			scene.rig.yaw = deg_to_rad(float(OS.get_environment("LM_YAW")) if OS.get_environment("LM_YAW") != "" else 200.0)
+			scene.paused = false
+		if frame > 5 and scene.paused: scene.paused = false
+		if frame == 30:
+			_save("gob_idle")
+			var skel: Skeleton3D = g.visual.model.find_child("Skeleton3D", true, false) if g.visual.model else null
+			if skel:
+				var head := skel.find_bone("mixamorig_HeadTop_End")
+				print("goblin height ", (skel.global_transform * skel.get_bone_global_pose(head)).origin.y - g.global_position.y, " rot ", g.rotation_degrees.y)
+			g.visual.swing()
+		if frame == 45:
+			_save("gob_attack")
+		if frame == 60:
+			_save("gob_attack2")
+			get_tree().quit()
 	elif plan == "heights":
 		if frame == 20:
 			for u in scene.party:
