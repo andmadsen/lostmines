@@ -27,6 +27,20 @@
       }
     },
     {
+      "id": "greatsword",
+      "name": "Greatsword",
+      "type": "weapon",
+      "two_handed": true,
+      "damage": "2d6",
+      "ability": "str",
+      "reach": 1.9,
+      "visual": {
+        "mesh": "sword",
+        "length": 1.25,
+        "color": "#c8ccd2"
+      }
+    },
+    {
       "id": "shortsword",
       "name": "Shortsword",
       "type": "weapon",

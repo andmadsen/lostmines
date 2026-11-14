@@ -363,6 +363,13 @@ func cmd_cycle(slot: String, types: Array) -> void:
 	if cur != "":
 		u.inventory.append(cur)
 	u.equipment[slot] = next_id
+	# a two-handed weapon needs the off hand free
+	if slot == "main_hand" and bool(DataDB.item(next_id).get("two_handed", false)):
+		var off := str(u.equipment.get("off_hand", ""))
+		if off != "":
+			u.inventory.append(off)
+			u.equipment["off_hand"] = ""
+			log_line("%s puts away the %s to use both hands." % [name_tag(u), DataDB.item(off).get("name", off)])
 	u.visual.apply_equipment(u.equipment)
 	log_line("%s equips the %s." % [name_tag(u), DataDB.item(next_id).get("name", next_id)])
 
@@ -373,6 +380,10 @@ func cmd_toggle(slot: String, type: String) -> void:
 	if selection.size() != 1:
 		return
 	var u := selection[0]
+	if slot == "off_hand" and bool(DataDB.item(str(u.equipment.get("main_hand", ""))).get("two_handed", false)):
+		if str(u.equipment.get("off_hand", "")) == "":
+			log_line("%s needs both hands for the %s." % [name_tag(u), DataDB.item(str(u.equipment.get("main_hand", ""))).get("name", "weapon")])
+			return
 	var cur := str(u.equipment.get(slot, ""))
 	if cur != "" and str(DataDB.item(cur).get("type", "")) == type:
 		u.inventory.append(cur)

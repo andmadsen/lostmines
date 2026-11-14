@@ -77,6 +77,20 @@ func _process(_d: float) -> void:
 		if frame == 70:
 			_save("gear")
 			get_tree().quit()
+	elif plan == "twohand":
+		if frame == 10:
+			var t: Unit = scene.party[0]
+			scene.select_unit(t)
+			print("start: ", t.equipment, " AC ", t.ac(), " atk ", t.attack_profile())
+			scene.cmd_toggle("off_hand", "shield")
+			scene.cmd_cycle("main_hand", ["weapon"])
+			scene.cmd_toggle("off_hand", "shield")
+			print("one-hand + shield: ", t.equipment, " AC ", t.ac())
+			scene.cmd_cycle("main_hand", ["weapon"])
+			scene.cmd_cycle("main_hand", ["weapon"])
+			print("back to greatsword: ", t.equipment, " AC ", t.ac(), " inv ", t.inventory)
+			print(scene.hud.log_label.get_parsed_text())
+			get_tree().quit()
 	elif plan == "equip":
 		if frame == 10:
 			var t: Unit = scene.party[0]

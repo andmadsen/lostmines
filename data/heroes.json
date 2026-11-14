@@ -24,12 +24,14 @@
         "animation_set": "humanoid_melee"
       },
       "equipment": {
-        "main_hand": "longsword",
-        "off_hand": "wooden_shield",
+        "main_hand": "greatsword",
+        "off_hand": "",
         "armor": "chain_mail",
         "head": ""
       },
       "inventory": [
+        "wooden_shield",
+        "longsword",
         "battleaxe",
         "leather_armor",
         "plate_armor",
