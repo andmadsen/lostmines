@@ -35,12 +35,12 @@
       "ability": "str",
       "reach": 1.9,
       "visual": {
-        "model": "res://assets/weapons/greatsword/scene.gltf",
+        "model": "res://assets/weapons/greatsword2/scene.gltf",
         "length": 1.35,
+        "brightness": 1.15,
+        "metallic": 0.5,
         "mesh": "sword",
-        "color": "#c8ccd2",
-        "brightness": 2.2,
-        "metallic": 0.45
+        "color": "#c8ccd2"
       }
     },
     {
