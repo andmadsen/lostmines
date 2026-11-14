@@ -259,7 +259,41 @@ static func make_flame() -> GPUParticles3D:
 
 
 # ---------------- materials ----------------
+const WALL_TEX := "res://assets/textures/cave_wall/textures/dark_rock_02_%s_1k.%s"
+const FLOOR_TEX := "res://assets/textures/cave_floor/textures/rock_face_04_%s_1k.%s"
+
+
+## A material from downloaded PBR textures (Poly Haven): colour, normal and
+## roughness maps, projected in world space so any rock shape gets them
+## without UVs. Returns null if the textures are not there.
+static func _pbr_material(pattern: String, scale: float, tint: Color) -> StandardMaterial3D:
+	var diff := pattern % ["diff", "jpg"]
+	if not ResourceLoader.exists(diff):
+		return null
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(diff)
+	m.albedo_color = tint
+	var nor := pattern % ["nor_gl", "png"]
+	if ResourceLoader.exists(nor):
+		m.normal_enabled = true
+		m.normal_texture = load(nor)
+		m.normal_scale = 1.3
+	var rough := pattern % ["rough", "png"]
+	if ResourceLoader.exists(rough):
+		m.roughness_texture = load(rough)
+		m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_world_triplanar = true
+	m.uv1_triplanar_sharpness = 4.0
+	m.uv1_scale = Vector3(scale, scale, scale)
+	return m
+
+
 static func rock_material(dark := false) -> StandardMaterial3D:
+	var pm := _pbr_material(WALL_TEX, 0.33, Color(0.55, 0.5, 0.45) if dark else Color(1.15, 1.08, 1.0))
+	if pm:
+		return pm
 	var m := StandardMaterial3D.new()
 	var n := FastNoiseLite.new()
 	n.noise_type = FastNoiseLite.TYPE_CELLULAR
@@ -294,6 +328,9 @@ static func rock_material(dark := false) -> StandardMaterial3D:
 
 
 static func ground_material() -> StandardMaterial3D:
+	var pm := _pbr_material(FLOOR_TEX, 0.22, Color(0.95, 0.88, 0.8))
+	if pm:
+		return pm
 	var m := StandardMaterial3D.new()
 	var n := FastNoiseLite.new()
 	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
