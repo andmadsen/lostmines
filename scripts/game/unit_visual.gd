@@ -228,6 +228,8 @@ func _attach_items(equipment: Dictionary) -> void:
 
 
 func weapon_mesh(v: Dictionary) -> Node3D:
+	if str(v.get("model", "")) != "" and ResourceLoader.exists(str(v.get("model", ""))):
+		return ModelFit.weapon(v)
 	var root := Node3D.new()
 	var kind := str(v.get("mesh", "sword"))
 	var length := float(v.get("length", 0.8))

@@ -28,6 +28,15 @@ func _process(_d: float) -> void:
 			_save("fight2")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "sword":
+		if frame == 20:
+			var a: Unit = scene.party[0]
+			var aabb := AABB(); var first := true
+			for m in a.visual.hand_r.find_children("*", "MeshInstance3D", true, false):
+				var bb: AABB = m.global_transform * m.get_aabb()
+				aabb = bb if first else aabb.merge(bb); first = false
+			print("sword world aabb ", aabb.size, " hand at ", a.visual.hand_r.global_position, " unit at ", a.global_position)
+			get_tree().quit()
 	elif plan == "model":
 		var a: Unit = scene.party[0]
 		if frame == 5:
