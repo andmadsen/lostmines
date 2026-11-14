@@ -89,6 +89,7 @@ func _ready() -> void:
 	_add_button(grid, "armor", "Change armor", func(): game.cmd_cycle("armor", ["armor"]))
 	_add_button(grid, "shield", "Shield on/off", func(): game.cmd_toggle("off_hand", "shield"))
 	_add_button(grid, "helm", "Helmet on/off", func(): game.cmd_toggle("head", "helmet"))
+	_add_button(grid, "torch", "Torch on/off", func(): game.cmd_toggle("off_hand", "light"))
 	_add_button(grid, "pause", "Pause  [Space]", func(): game.toggle_pause())
 	_add_button(grid, "help", "Help  [H]", func(): help_panel.visible = not help_panel.visible)
 	_add_button(grid, "reset", "Restart  [F5]", func(): game.get_tree().reload_current_scene())
@@ -242,7 +243,7 @@ func refresh() -> void:
 		sel_label.text = "%d heroes selected" % sel.size()
 	else:
 		sel_label.text = "Nobody selected — click a portrait"
-	for k in ["weapon", "armor", "shield", "helm"]:
+	for k in ["weapon", "armor", "shield", "helm", "torch"]:
 		(_buttons[k] as Button).disabled = sel.size() != 1
 
 

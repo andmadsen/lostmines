@@ -62,10 +62,9 @@ func _ready() -> void:
 		u.rotation.y = 0.0
 		var lamp := OmniLight3D.new()
 		lamp.position = Vector3(0.3, 2.3, 0)
-		lamp.light_color = Color(1.0, 0.72, 0.45) if i == 0 else Color(1.0, 0.88, 0.75)
-		lamp.light_energy = 1.5 if i == 0 else 0.5
-		lamp.omni_range = 9.0 if i == 0 else 4.0
-		lamp.shadow_enabled = i == 0   # Torvald carries the party's torch
+		lamp.light_color = Color(1.0, 0.88, 0.75)
+		lamp.light_energy = 0.35
+		lamp.omni_range = 4.0   # faint fill light; the real light comes from held torches
 		u.add_child(lamp)
 		party.append(u)
 	for c in GOBLINS:
@@ -368,25 +367,31 @@ func cmd_cycle(slot: String, types: Array) -> void:
 	log_line("%s equips the %s." % [name_tag(u), DataDB.item(next_id).get("name", next_id)])
 
 
-## Takes an item of a type off, or puts the first one from the inventory on.
+## Toggles an item type in a slot: takes it off if worn, otherwise puts the
+## first one from the inventory on (swapping out whatever was there).
 func cmd_toggle(slot: String, type: String) -> void:
 	if selection.size() != 1:
 		return
 	var u := selection[0]
 	var cur := str(u.equipment.get(slot, ""))
-	if cur != "":
+	if cur != "" and str(DataDB.item(cur).get("type", "")) == type:
 		u.inventory.append(cur)
 		u.equipment[slot] = ""
-		log_line("%s takes off the %s." % [name_tag(u), DataDB.item(cur).get("name", cur)])
+		log_line("%s puts away the %s." % [name_tag(u), DataDB.item(cur).get("name", cur)])
 	else:
+		var found := ""
 		for id in u.inventory:
 			if str(DataDB.item(str(id)).get("type", "")) == type:
-				u.inventory.erase(id)
-				u.equipment[slot] = id
-				log_line("%s puts on the %s." % [name_tag(u), DataDB.item(str(id)).get("name", id)])
+				found = str(id)
 				break
-		if str(u.equipment.get(slot, "")) == "":
-			log_line("%s has no %s to put on." % [name_tag(u), type])
+		if found == "":
+			log_line("%s has no %s." % [name_tag(u), type])
+			return
+		u.inventory.erase(found)
+		if cur != "":
+			u.inventory.append(cur)
+		u.equipment[slot] = found
+		log_line("%s takes out the %s." % [name_tag(u), DataDB.item(found).get("name", found)])
 	u.visual.apply_equipment(u.equipment)
 
 

@@ -196,10 +196,34 @@ func _build_torch(c: Vector2i) -> void:
 	stick.rotation = Vector3(-dir.y * 0.5, 0, dir.x * 0.5)
 	stick.material_override = UnitVisual.mat("#3a2414", 0.0, 0.8)
 	holder.add_child(stick)
+	var flame := make_flame()
+	flame.position = Vector3(0, 0.3, 0)
+	holder.add_child(flame)
+	var light := OmniLight3D.new()
+	light.position = Vector3(-dir.x * 0.35, 0.4, -dir.y * 0.35)
+	light.light_color = Color(1.0, 0.62, 0.32)
+	light.light_energy = 2.6
+	light.omni_range = 9.0
+	light.omni_attenuation = 1.3
+	light.shadow_enabled = true
+	light.light_volumetric_fog_energy = 1.5
+	holder.add_child(light)
+	torches.append({"light": light, "base": 2.6, "seed": _rng.randf() * 100.0})
+
+
+func _process(_delta: float) -> void:
+	var t := Time.get_ticks_msec() / 1000.0
+	for tc in torches:
+		var s: float = tc["seed"]
+		var f := 0.85 + 0.1 * sin(t * 11.0 + s) + 0.07 * sin(t * 23.0 + s * 2.0) + 0.05 * sin(t * 4.0 + s)
+		(tc["light"] as OmniLight3D).light_energy = float(tc["base"]) * f
+
+
+## A small flame made of glowing particles (used by wall torches and hand torches).
+static func make_flame() -> GPUParticles3D:
 	var flame := GPUParticles3D.new()
 	flame.amount = 28
 	flame.lifetime = 0.6
-	flame.position = Vector3(0, 0.3, 0)
 	var pm := ParticleProcessMaterial.new()
 	pm.direction = Vector3(0, 1, 0)
 	pm.spread = 12.0
@@ -231,25 +255,7 @@ func _build_torch(c: Vector2i) -> void:
 	fm.albedo_color = Color(1, 0.7, 0.3)
 	q.material = fm
 	flame.draw_pass_1 = q
-	holder.add_child(flame)
-	var light := OmniLight3D.new()
-	light.position = Vector3(-dir.x * 0.35, 0.4, -dir.y * 0.35)
-	light.light_color = Color(1.0, 0.62, 0.32)
-	light.light_energy = 2.6
-	light.omni_range = 9.0
-	light.omni_attenuation = 1.3
-	light.shadow_enabled = true
-	light.light_volumetric_fog_energy = 1.5
-	holder.add_child(light)
-	torches.append({"light": light, "base": 2.6, "seed": _rng.randf() * 100.0})
-
-
-func _process(_delta: float) -> void:
-	var t := Time.get_ticks_msec() / 1000.0
-	for tc in torches:
-		var s: float = tc["seed"]
-		var f := 0.85 + 0.1 * sin(t * 11.0 + s) + 0.07 * sin(t * 23.0 + s * 2.0) + 0.05 * sin(t * 4.0 + s)
-		(tc["light"] as OmniLight3D).light_energy = float(tc["base"]) * f
+	return flame
 
 
 # ---------------- materials ----------------

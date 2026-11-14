@@ -28,6 +28,20 @@ func _process(_d: float) -> void:
 			_save("fight2")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "shadow":
+		if frame == 5:
+			scene.rig.focus(Vector3(23, 0, 24))
+			scene.rig._target_distance = 11.0
+			scene.rig.distance = 11.0
+			scene.paused = false
+			for u in scene.party:
+				u.ai_state = "idle"
+		if frame == 60:
+			_save("shadow1")
+			scene.party[1].order_move(Vector3(19, 0, 22))
+		if frame == 160:
+			_save("shadow2")
+			get_tree().quit()
 	elif plan == "gear":
 		if frame == 5:
 			var t: Unit = scene.party[0]

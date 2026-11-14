@@ -1,20 +1,191 @@
 {
   "items": [
-    { "id": "longsword", "name": "Longsword", "type": "weapon", "damage": "1d8", "ability": "str", "reach": 1.8, "visual": { "mesh": "sword", "length": 0.95, "color": "#c8ccd2" } },
-    { "id": "battleaxe", "name": "Battleaxe", "type": "weapon", "damage": "1d8", "ability": "str", "reach": 1.8, "visual": { "mesh": "axe", "length": 0.9, "color": "#9aa0a8" } },
-    { "id": "shortsword", "name": "Shortsword", "type": "weapon", "damage": "1d6", "ability": "finesse", "reach": 1.6, "visual": { "mesh": "sword", "length": 0.6, "color": "#d0d4da" } },
-    { "id": "dagger", "name": "Dagger", "type": "weapon", "damage": "1d4", "ability": "finesse", "reach": 1.5, "visual": { "mesh": "sword", "length": 0.32, "color": "#d0d4da" } },
-    { "id": "scimitar", "name": "Scimitar", "type": "weapon", "damage": "1d6", "ability": "finesse", "reach": 1.6, "visual": { "mesh": "sword", "length": 0.7, "color": "#8a8478" } },
-    { "id": "mace", "name": "Mace", "type": "weapon", "damage": "1d6", "ability": "str", "reach": 1.6, "visual": { "mesh": "mace", "length": 0.7, "color": "#a8a8a8" } },
-    { "id": "quarterstaff", "name": "Quarterstaff", "type": "weapon", "damage": "1d6", "ability": "str", "reach": 1.8, "visual": { "mesh": "staff", "length": 1.7, "color": "#6a4a2a", "glow": "#a98bff" } },
-
-    { "id": "wizard_robe", "name": "Wizard Robe", "type": "armor", "ac": 10, "dex_cap": 99, "visual": { "style": "robe", "color": "#3d2f6b", "metallic": 0.0, "roughness": 0.9 } },
-    { "id": "leather_armor", "name": "Leather Armor", "type": "armor", "ac": 11, "dex_cap": 99, "visual": { "style": "leather", "color": "#6b4a2c", "metallic": 0.0, "roughness": 0.75 } },
-    { "id": "chain_mail", "name": "Chain Mail", "type": "armor", "ac": 16, "dex_cap": 0, "visual": { "style": "chain", "color": "#8f969e", "metallic": 0.85, "roughness": 0.45 } },
-    { "id": "plate_armor", "name": "Plate Armor", "type": "armor", "ac": 18, "dex_cap": 0, "visual": { "style": "plate", "color": "#c9ced6", "metallic": 0.95, "roughness": 0.22 } },
-
-    { "id": "wooden_shield", "name": "Wooden Shield", "type": "shield", "ac": 2, "visual": { "mesh": "round_shield", "color": "#7a1e1e", "rim": "#8a8f96" } },
-    { "id": "steel_shield", "name": "Steel Shield", "type": "shield", "ac": 2, "visual": { "mesh": "kite_shield", "color": "#b8bec6", "rim": "#c9a24a" } },
-    { "id": "iron_helm", "name": "Iron Helm", "type": "helmet", "ac": 0, "visual": { "mesh": "helm", "color": "#9aa2aa" } }
+    {
+      "id": "longsword",
+      "name": "Longsword",
+      "type": "weapon",
+      "damage": "1d8",
+      "ability": "str",
+      "reach": 1.8,
+      "visual": {
+        "mesh": "sword",
+        "length": 0.95,
+        "color": "#c8ccd2"
+      }
+    },
+    {
+      "id": "battleaxe",
+      "name": "Battleaxe",
+      "type": "weapon",
+      "damage": "1d8",
+      "ability": "str",
+      "reach": 1.8,
+      "visual": {
+        "mesh": "axe",
+        "length": 0.9,
+        "color": "#9aa0a8"
+      }
+    },
+    {
+      "id": "shortsword",
+      "name": "Shortsword",
+      "type": "weapon",
+      "damage": "1d6",
+      "ability": "finesse",
+      "reach": 1.6,
+      "visual": {
+        "mesh": "sword",
+        "length": 0.6,
+        "color": "#d0d4da"
+      }
+    },
+    {
+      "id": "dagger",
+      "name": "Dagger",
+      "type": "weapon",
+      "damage": "1d4",
+      "ability": "finesse",
+      "reach": 1.5,
+      "visual": {
+        "mesh": "sword",
+        "length": 0.32,
+        "color": "#d0d4da"
+      }
+    },
+    {
+      "id": "scimitar",
+      "name": "Scimitar",
+      "type": "weapon",
+      "damage": "1d6",
+      "ability": "finesse",
+      "reach": 1.6,
+      "visual": {
+        "mesh": "sword",
+        "length": 0.7,
+        "color": "#8a8478"
+      }
+    },
+    {
+      "id": "mace",
+      "name": "Mace",
+      "type": "weapon",
+      "damage": "1d6",
+      "ability": "str",
+      "reach": 1.6,
+      "visual": {
+        "mesh": "mace",
+        "length": 0.7,
+        "color": "#a8a8a8"
+      }
+    },
+    {
+      "id": "quarterstaff",
+      "name": "Quarterstaff",
+      "type": "weapon",
+      "damage": "1d6",
+      "ability": "str",
+      "reach": 1.8,
+      "visual": {
+        "mesh": "staff",
+        "length": 1.7,
+        "color": "#6a4a2a",
+        "glow": "#a98bff"
+      }
+    },
+    {
+      "id": "wizard_robe",
+      "name": "Wizard Robe",
+      "type": "armor",
+      "ac": 10,
+      "dex_cap": 99,
+      "visual": {
+        "style": "robe",
+        "color": "#3d2f6b",
+        "metallic": 0.0,
+        "roughness": 0.9
+      }
+    },
+    {
+      "id": "leather_armor",
+      "name": "Leather Armor",
+      "type": "armor",
+      "ac": 11,
+      "dex_cap": 99,
+      "visual": {
+        "style": "leather",
+        "color": "#6b4a2c",
+        "metallic": 0.0,
+        "roughness": 0.75
+      }
+    },
+    {
+      "id": "chain_mail",
+      "name": "Chain Mail",
+      "type": "armor",
+      "ac": 16,
+      "dex_cap": 0,
+      "visual": {
+        "style": "chain",
+        "color": "#8f969e",
+        "metallic": 0.85,
+        "roughness": 0.45
+      }
+    },
+    {
+      "id": "plate_armor",
+      "name": "Plate Armor",
+      "type": "armor",
+      "ac": 18,
+      "dex_cap": 0,
+      "visual": {
+        "style": "plate",
+        "color": "#c9ced6",
+        "metallic": 0.95,
+        "roughness": 0.22
+      }
+    },
+    {
+      "id": "wooden_shield",
+      "name": "Wooden Shield",
+      "type": "shield",
+      "ac": 2,
+      "visual": {
+        "mesh": "round_shield",
+        "color": "#7a1e1e",
+        "rim": "#8a8f96"
+      }
+    },
+    {
+      "id": "steel_shield",
+      "name": "Steel Shield",
+      "type": "shield",
+      "ac": 2,
+      "visual": {
+        "mesh": "kite_shield",
+        "color": "#b8bec6",
+        "rim": "#c9a24a"
+      }
+    },
+    {
+      "id": "iron_helm",
+      "name": "Iron Helm",
+      "type": "helmet",
+      "ac": 0,
+      "visual": {
+        "mesh": "helm",
+        "color": "#9aa2aa"
+      }
+    },
+    {
+      "id": "torch",
+      "name": "Torch",
+      "type": "light",
+      "visual": {
+        "mesh": "torch",
+        "light_color": "#ff9e52",
+        "light_energy": 2.0,
+        "light_range": 10.0
+      }
+    }
   ]
 }

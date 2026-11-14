@@ -24,6 +24,8 @@ var walk_amount := 0.0
 var _phase := 0.0
 var _swing := 0.0
 var _dead := false
+var held_light: OmniLight3D = null
+var _flicker_seed := randf() * 100.0
 
 static var _mat_cache: Dictionary = {}
 
@@ -113,8 +115,12 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 	if not main.is_empty():
 		hand_r.add_child(weapon_mesh(main.get("visual", {})))
 	var off := DataDB.item(str(equipment.get("off_hand", "")))
+	held_light = null
 	if not off.is_empty():
-		hand_l.add_child(shield_mesh(off.get("visual", {})))
+		if str(off.get("type", "")) == "light":
+			hand_l.add_child(torch_mesh(off.get("visual", {})))
+		else:
+			hand_l.add_child(shield_mesh(off.get("visual", {})))
 	var helm := DataDB.item(str(equipment.get("head", "")))
 	hair.visible = helm.is_empty()
 	if not helm.is_empty():
@@ -159,6 +165,39 @@ func weapon_mesh(v: Dictionary) -> Node3D:
 	return root
 
 
+## A torch held in the off hand: flame + a shadow-casting light that moves
+## with the hero, so shadows swing as the party walks.
+func torch_mesh(v: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.rotation = Vector3(-0.35, 0, 0)
+	var stick := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.035
+	cyl.bottom_radius = 0.025
+	cyl.height = 0.5
+	stick.mesh = cyl
+	stick.position = Vector3(0, 0.2, 0)
+	stick.material_override = mat("#3a2414", 0.0, 0.8)
+	root.add_child(stick)
+	var flame := CaveBuilder.make_flame()
+	flame.position = Vector3(0, 0.5, 0)
+	root.add_child(flame)
+	var l := OmniLight3D.new()
+	l.position = Vector3(0, 0.6, 0)
+	l.light_color = Color(str(v.get("light_color", "#ff9e52")))
+	l.light_energy = float(v.get("light_energy", 2.0))
+	l.omni_range = float(v.get("light_range", 10.0))
+	l.omni_attenuation = 1.2
+	l.shadow_enabled = true
+	l.shadow_blur = 1.5
+	l.light_size = 0.08
+	l.light_volumetric_fog_energy = 1.2
+	l.set_meta("base_energy", l.light_energy)
+	root.add_child(l)
+	held_light = l
+	return root
+
+
 func shield_mesh(v: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	var face := MeshInstance3D.new()
@@ -188,7 +227,16 @@ func _process(delta: float) -> void:
 	var sw := sin(_phase) * 0.55 * walk_amount
 	leg_l.rotation.x = sw
 	leg_r.rotation.x = -sw
-	arm_l.rotation.x = -sw * 0.6
+	var now := Time.get_ticks_msec() / 1000.0
+	if held_light != null and is_instance_valid(held_light):
+		# torch held forward; it sways with each step so the shadows swing
+		arm_l.rotation.x = -1.05 + sin(_phase * 0.5) * 0.12 * walk_amount + sin(now * 1.3 + _flicker_seed) * 0.03
+		arm_l.rotation.z = -0.25
+		var base := float(held_light.get_meta("base_energy", 2.0))
+		held_light.light_energy = base * (0.86 + 0.08 * sin(now * 12.0 + _flicker_seed) + 0.06 * sin(now * 27.0 + _flicker_seed * 2.0))
+	else:
+		arm_l.rotation.x = -sw * 0.6
+		arm_l.rotation.z = 0.0
 	body.position.y = absf(sin(_phase)) * 0.04 * walk_amount
 	if _swing > 0.0:
 		_swing = maxf(0.0, _swing - delta)
