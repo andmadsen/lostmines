@@ -33,6 +33,7 @@ var visual: UnitVisual
 var ring: MeshInstance3D
 var _repath := 0.0
 var _facing := 0.0
+var _calm := 0.0          ## seconds since the last fight nearby
 
 
 func setup_hero(id: String) -> void:
@@ -238,6 +239,14 @@ func tick(delta: float) -> void:
 		if path.is_empty() and order == "move":
 			order = ""
 	visual.walk_amount = lerpf(visual.walk_amount, 1.0 if moving else 0.0, 0.25)
+	# weapon in hand during fights, on the back a few seconds after
+	if order == "attack" or game.fight_near(global_position):
+		_calm = 0.0
+		visual.set_armed(true)
+	else:
+		_calm += delta
+		if _calm > 3.0:
+			visual.set_armed(false)
 
 
 func _follow_path(delta: float) -> bool:

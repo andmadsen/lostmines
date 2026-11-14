@@ -34,6 +34,9 @@ var anim_player: AnimationPlayer
 var move_speed := 3.0
 var _walk_ref_speed := 1.5
 var _attack_len := 1.0
+var back_slot: Node3D = null      ## where the main weapon rests when sheathed
+var _main_weapon: Node3D = null
+var armed := true
 var _flicker_seed := randf() * 100.0
 
 static var _mat_cache: Dictionary = {}
@@ -135,6 +138,8 @@ func _build_model(path: String) -> void:
 		_play("idle", 0.0)
 	var grip: Dictionary = aset.get("grip", {})
 	hand_r = _bone_slot(skel, "mixamorig_RightHand", grip.get("right", {}))
+	back_slot = _bone_slot(skel, "mixamorig_Spine2", grip.get("back", {"position": [0.0, 0.12, -0.17], "rotation": [0, 0, 200]}))
+	armed = false
 	hand_l = _bone_slot(skel, "mixamorig_LeftHand", grip.get("left", {}))
 	head_slot = _bone_slot(skel, "mixamorig_Head", grip.get("head", {}))
 	extras = Node3D.new()
@@ -171,6 +176,9 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 	_clear(hand_l)
 	_clear(head_slot)
 	_clear(extras)
+	if back_slot:
+		_clear(back_slot)
+	_main_weapon = null
 	held_light = null
 	if using_model:
 		_attach_items(equipment)
@@ -208,7 +216,11 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 func _attach_items(equipment: Dictionary) -> void:
 	var main := DataDB.item(str(equipment.get("main_hand", "")))
 	if not main.is_empty():
-		hand_r.add_child(weapon_mesh(main.get("visual", {})))
+		_main_weapon = weapon_mesh(main.get("visual", {}))
+		if using_model and back_slot and not armed:
+			back_slot.add_child(_main_weapon)
+		else:
+			hand_r.add_child(_main_weapon)
 	var off := DataDB.item(str(equipment.get("off_hand", "")))
 	if not off.is_empty():
 		if str(off.get("type", "")) == "light":
@@ -372,7 +384,18 @@ func _flicker() -> void:
 	held_light.light_energy = base * (0.86 + 0.08 * sin(now * 12.0 + _flicker_seed) + 0.06 * sin(now * 27.0 + _flicker_seed * 2.0))
 
 
+## Draws the main weapon (to the hand) or sheathes it (on the back).
+func set_armed(v: bool) -> void:
+	if not using_model or back_slot == null or v == armed:
+		armed = v if not using_model else armed
+		return
+	armed = v
+	if _main_weapon and is_instance_valid(_main_weapon):
+		_main_weapon.reparent(hand_r if v else back_slot, false)
+
+
 func swing() -> void:
+	set_armed(true)
 	if using_model:
 		if anim_player and anim_player.has_animation("attack/attack"):
 			anim_player.play("attack/attack", 0.1)

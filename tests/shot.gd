@@ -28,6 +28,23 @@ func _process(_d: float) -> void:
 			_save("fight2")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "draw":
+		var a: Unit = scene.party[0]
+		if frame == 5:
+			Engine.max_fps = 60
+			scene.paused = false
+			print("frame 5 armed: ", a.visual.armed)
+			var g: Unit = scene.units[4]
+			a.order_attack(g)
+		if frame == 15:
+			print("ordered attack -> armed: ", a.visual.armed)
+			a.stop()
+			for u in scene.units:
+				if u.is_monster: u.down = true
+		if frame == 15 + 60 * 4:
+			print("4 s after fight -> armed: ", a.visual.armed)
+			get_tree().quit()
+		if frame > 5 and scene.paused: scene.paused = false
 	elif plan == "anims":
 		if frame == 10:
 			var ap: AnimationPlayer = scene.party[0].visual.anim_player
@@ -53,6 +70,7 @@ func _process(_d: float) -> void:
 			scene.paused = false
 		if frame == 50:
 			_save("model_idle")
+			print("armed at idle: ", a.visual.armed)
 			a.order_move(a.global_position + Vector3(-2, 0, 3))
 		if frame > 50 and frame < 75:
 			scene.rig.focus(a.global_position)

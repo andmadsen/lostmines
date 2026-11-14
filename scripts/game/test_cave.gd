@@ -436,6 +436,14 @@ func _nearest_floor(c: Vector2i) -> Vector2i:
 	return c
 
 
+## True if an alerted, living enemy is within 15 m.
+func fight_near(p: Vector3) -> bool:
+	for u in units:
+		if u.is_monster and not u.down and u.ai_state == "combat" and u.global_position.distance_to(p) < 15.0:
+			return true
+	return false
+
+
 func line_of_sight(a: Vector3, b: Vector3) -> bool:
 	var p := cave.world_to_cell(a)
 	var q := cave.world_to_cell(b)
