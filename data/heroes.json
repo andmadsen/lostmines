@@ -1,8 +1,8 @@
 {
   "heroes": [
     {
-      "id": "torvald",
-      "name": "Torvald Ironhand",
+      "id": "aurelia",
+      "name": "Aurelia Dawnblade",
       "race": "Human",
       "class": "Fighter",
       "level": 1,
@@ -16,8 +16,8 @@
       },
       "hp": 16,
       "look": {
-        "skin": "#d9a882",
-        "hair": "#5a3418",
+        "skin": "#f0c8a8",
+        "hair": "#e8c66a",
         "scale": 1.0,
         "width": 1.0
       },

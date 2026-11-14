@@ -25,7 +25,7 @@ const LAYOUT: Array[String] = [
 	"##########...#########",
 	"######################",
 ]
-const HERO_IDS: Array[String] = ["torvald", "pip", "dagna", "elandor"]
+const HERO_IDS: Array[String] = ["aurelia", "pip", "dagna", "elandor"]
 const HERO_START: Array[Vector2i] = [Vector2i(11, 14), Vector2i(10, 15), Vector2i(12, 15), Vector2i(11, 16)]
 const GOBLINS: Array[Vector2i] = [Vector2i(11, 3), Vector2i(8, 4), Vector2i(14, 5)]
 
