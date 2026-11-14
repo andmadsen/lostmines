@@ -80,6 +80,15 @@ func _process(_d: float) -> void:
 				var ab: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
 				print("mesh ", mi.name, " center ", inv * ab.get_center(), " size ", ab.size, " visible ", (mi as MeshInstance3D).is_visible_in_tree())
 			get_tree().quit()
+	elif plan == "heights":
+		if frame == 20:
+			for u in scene.party:
+				var hv: UnitVisual = u.visual
+				var skel: Skeleton3D = hv.model.find_child("Skeleton3D", true, false)
+				var head := skel.find_bone("mixamorig_HeadTop_End")
+				var ht: float = (skel.global_transform * skel.get_bone_global_pose(head)).origin.y - u.global_position.y if head >= 0 else -1.0
+				print("height ", u.data_id, " ", ht, " scale ", hv.body.scale.x)
+			get_tree().quit()
 	elif plan == "healshot":
 		var k: Unit = scene.party[2]
 		var a: Unit = scene.party[0]
