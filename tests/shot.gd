@@ -29,7 +29,7 @@ func _process(_d: float) -> void:
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
 	elif plan == "bowshot":
-		var p: Unit = scene.party[1]
+		var p: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 1]
 		if frame == 5:
 			p.global_position = Vector3(23, 0, 20)
 			p.rotation.y = 0.0
@@ -56,7 +56,7 @@ func _process(_d: float) -> void:
 		var p: Unit = scene.party[1]
 		if frame == 5:
 			Engine.max_fps = 60
-			print("pip weapon: ", p.attack_profile(), " speed ", p.speed, " elandor off: ", scene.party[3].equipment.get("off_hand"))
+			print("pip weapon: ", p.attack_profile(), " speed ", p.speed, " shirvani off: ", scene.party[3].equipment.get("off_hand"))
 			p.global_position = Vector3(23, 0, 20)
 			var g: Unit = scene.units[4]
 			print("distance to goblin: ", p.global_position.distance_to(g.global_position), " LOS ", scene.line_of_sight(p.global_position, g.global_position))
@@ -98,7 +98,7 @@ func _process(_d: float) -> void:
 			print("sword world aabb ", aabb.size, " hand at ", a.visual.hand_r.global_position, " unit at ", a.global_position)
 			get_tree().quit()
 	elif plan == "model":
-		var a: Unit = scene.party[0]
+		var a: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 0]
 		if frame == 5:
 			scene.rig.focus(a.global_position)
 			scene.rig._target_distance = 5.5

@@ -105,9 +105,9 @@
       "inventory": []
     },
     {
-      "id": "elandor",
-      "name": "Elandor Vael",
-      "race": "High Elf",
+      "id": "shirvani",
+      "name": "Shirvani",
+      "race": "Human",
       "class": "Wizard",
       "level": 1,
       "abilities": {
@@ -122,8 +122,10 @@
       "look": {
         "skin": "#efd2b8",
         "hair": "#e6e0c8",
-        "scale": 1.04,
-        "width": 0.92
+        "scale": 1.0,
+        "width": 0.92,
+        "model": "res://assets/characters/shirvani.fbx",
+        "animation_set": "caster"
       },
       "equipment": {
         "main_hand": "quarterstaff",
@@ -131,7 +133,8 @@
         "armor": "wizard_robe",
         "head": ""
       },
-      "inventory": []
+      "inventory": [],
+      "cantrip": "fire_bolt"
     }
   ]
 }

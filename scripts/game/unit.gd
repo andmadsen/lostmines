@@ -160,6 +160,13 @@ func ac() -> int:
 func attack_profile() -> Dictionary:
 	if is_monster:
 		return monster_attack
+	# casters with an attack cantrip use it instead of their weapon
+	var cid := str(DataDB.heroes.get(data_id, {}).get("cantrip", ""))
+	if cid != "" and DataDB.spells.has(cid):
+		var sp: Dictionary = DataDB.spells[cid]
+		var cm := Rules.mod(ab("int"))
+		return {"name": str(sp.get("name", "Spell")), "to_hit": Rules.PROFICIENCY + cm, "damage": str(sp.get("damage", "1d10")),
+			"reach": float(sp.get("range", 24.0)), "ranged": true, "projectile": sp.get("projectile", {})}
 	var w := DataDB.item(str(equipment.get("main_hand", "")))
 	if w.is_empty():
 		var m := Rules.mod(ab("str"))
@@ -316,7 +323,7 @@ func _attack(t: Unit, prof: Dictionary) -> void:
 			game.log_line("%s → %s: %s %s vs AC %d%s — [color=#9a9a9a]Miss[/color]" % [who, tgt, wname, roll_txt, target_ac, dis_txt])
 			game.float_text(t.global_position + Vector3(0, 2.0, 0), "Miss", Color(0.75, 0.75, 0.75))
 	if ranged:
-		game.shoot_arrow(self, t, visual.release_time(), hit, resolve)
+		game.shoot_arrow(self, t, visual.release_time(), hit, resolve, prof.get("projectile", {}))
 	else:
 		resolve.call()
 	if t.is_monster and t.ai_state == "idle":

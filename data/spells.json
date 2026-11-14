@@ -1,0 +1,21 @@
+{
+  "spells": [
+    {
+      "id": "fire_bolt",
+      "name": "Fire Bolt",
+      "level": 0,
+      "school": "Evocation",
+      "description": "You hurl a mote of fire at a creature within range. Ranged spell attack, 1d10 fire damage.",
+      "attack": "ranged_spell",
+      "damage": "1d10",
+      "damage_type": "fire",
+      "range": 24.0,
+      "projectile": {
+        "kind": "fire",
+        "color": "#ff8a2a",
+        "speed": 22.0,
+        "size": 0.12
+      }
+    }
+  ]
+}

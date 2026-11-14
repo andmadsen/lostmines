@@ -4,13 +4,14 @@ extends Node
 
 signal data_changed
 
-const FILES: Array[String] = ["heroes", "monsters", "items", "animations"]
+const FILES: Array[String] = ["heroes", "monsters", "items", "animations", "spells"]
 const POLL_SECONDS := 1.0
 
 var heroes: Dictionary = {}
 var monsters: Dictionary = {}
 var items: Dictionary = {}
 var animation_sets: Dictionary = {}
+var spells: Dictionary = {}
 
 var _mtimes: Dictionary = {}
 var _poll := 0.0
@@ -39,6 +40,7 @@ func reload() -> void:
 	monsters = _index(_load("monsters"), "monsters")
 	items = _index(_load("items"), "items")
 	animation_sets = _index(_load("animations"), "animation_sets")
+	spells = _index(_load("spells"), "spells")
 	for f in FILES:
 		_mtimes[f] = FileAccess.get_modified_time(_path(f))
 

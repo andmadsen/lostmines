@@ -117,6 +117,66 @@
         }
       },
       "attack_speed": 1.0
+    },
+    {
+      "id": "caster",
+      "idle": "res://assets/animations/caster/idle.fbx",
+      "walk": "res://assets/animations/caster/walk.fbx",
+      "attack": "res://assets/animations/caster/attack.fbx",
+      "death": "res://assets/animations/common/death.fbx",
+      "walk_speed": 1.5,
+      "release": 0.5,
+      "grip": {
+        "right": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            -90
+          ]
+        },
+        "left": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            0.1,
+            0.02
+          ],
+          "rotation": [
+            0,
+            180,
+            0
+          ]
+        },
+        "back": {
+          "position": [
+            -0.09,
+            0.27,
+            -0.17
+          ],
+          "rotation": [
+            0,
+            0,
+            200
+          ]
+        }
+      },
+      "attack_speed": 1.0
     }
   ]
 }

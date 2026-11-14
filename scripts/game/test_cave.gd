@@ -25,7 +25,7 @@ const LAYOUT: Array[String] = [
 	"##########...#########",
 	"######################",
 ]
-const HERO_IDS: Array[String] = ["aurelia", "pip", "dagna", "elandor"]
+const HERO_IDS: Array[String] = ["aurelia", "pip", "dagna", "shirvani"]
 const HERO_START: Array[Vector2i] = [Vector2i(11, 14), Vector2i(10, 15), Vector2i(12, 15), Vector2i(11, 16)]
 const GOBLINS: Array[Vector2i] = [Vector2i(11, 3), Vector2i(8, 4), Vector2i(14, 5)]
 
@@ -448,8 +448,8 @@ func enemy_adjacent(u: Unit) -> bool:
 
 ## Fires an arrow from shooter to target. on_hit runs when it arrives
 ## (it logs the hit or miss and applies damage). Flight respects pause.
-func shoot_arrow(shooter: Unit, target: Unit, delay: float, hit: bool, on_hit: Callable) -> void:
-	_arrows.append({"shooter": shooter, "target": target, "delay": delay, "hit": hit, "cb": on_hit, "node": null, "t": 0.0})
+func shoot_arrow(shooter: Unit, target: Unit, delay: float, hit: bool, on_hit: Callable, look: Dictionary = {}) -> void:
+	_arrows.append({"shooter": shooter, "target": target, "delay": delay, "hit": hit, "cb": on_hit, "node": null, "t": 0.0, "look": look})
 
 
 func _update_arrows(delta: float) -> void:
@@ -472,8 +472,9 @@ func _update_arrows(delta: float) -> void:
 				end += side + (end - start).normalized() * 2.5 + Vector3(0, randf_range(-0.6, 0.3), 0)
 			a["start"] = start
 			a["end"] = end
-			a["dur"] = maxf(0.08, start.distance_to(end) / 32.0)
-			var node := _make_arrow()
+			var look: Dictionary = a["look"]
+			a["dur"] = maxf(0.08, start.distance_to(end) / float(look.get("speed", 32.0)))
+			var node := _make_arrow() if str(look.get("kind", "arrow")) == "arrow" else _make_bolt(look)
 			add_child(node)
 			node.global_position = start
 			a["node"] = node
@@ -487,11 +488,61 @@ func _update_arrows(delta: float) -> void:
 			n.look_at_from_position(n.global_position, pos, Vector3.UP)
 		n.global_position = pos
 		if k >= 1.0:
+			if str((a["look"] as Dictionary).get("kind", "arrow")) != "arrow":
+				_burst(n.global_position, Color.html(str((a["look"] as Dictionary).get("color", "#ff8a2a"))))
+				n.visible = false
 			(a["cb"] as Callable).call()
 			_arrows.remove_at(i)
 			var tw := create_tween()
 			tw.tween_interval(1.5)
 			tw.tween_callback(n.queue_free)
+
+
+## A glowing mote of magic (e.g. Fire Bolt) that lights up the cave as it flies.
+func _make_bolt(look: Dictionary) -> Node3D:
+	var col := Color.html(str(look.get("color", "#ff8a2a")))
+	var size := float(look.get("size", 0.12))
+	var root := Node3D.new()
+	var core := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = size
+	sm.height = size * 2.0
+	core.mesh = sm
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = col.lightened(0.5)
+	m.emission_enabled = true
+	m.emission = col
+	m.emission_energy_multiplier = 6.0
+	core.material_override = m
+	root.add_child(core)
+	var light := OmniLight3D.new()
+	light.light_color = col
+	light.light_energy = 3.0
+	light.omni_range = 5.0
+	root.add_child(light)
+	var trail := CaveBuilder.make_flame()
+	trail.scale = Vector3.ONE * 0.6
+	root.add_child(trail)
+	return root
+
+
+## Short flash of light and sparks where a spell lands.
+func _burst(p: Vector3, col: Color) -> void:
+	var light := OmniLight3D.new()
+	light.light_color = col
+	light.light_energy = 6.0
+	light.omni_range = 6.0
+	add_child(light)
+	light.global_position = p
+	var fl := CaveBuilder.make_flame()
+	fl.scale = Vector3.ONE * 1.6
+	add_child(fl)
+	fl.global_position = p
+	var tw := create_tween()
+	tw.tween_property(light, "light_energy", 0.0, 0.5)
+	tw.tween_callback(light.queue_free)
+	tw.tween_callback(fl.queue_free)
 
 
 func _make_arrow() -> Node3D:
