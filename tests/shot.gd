@@ -52,6 +52,26 @@ func _process(_d: float) -> void:
 			_save("bow_arrow")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "gearclose":
+		var k: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 2]
+		if frame == 5:
+			k.visual.set_armed(true)
+			k._calm = -999.0
+			scene.rig.focus(k.global_position + Vector3(0, 0.6, 0))
+			var dist := float(OS.get_environment("LM_DIST")) if OS.get_environment("LM_DIST") != "" else 2.6
+			scene.rig._target_distance = dist
+			scene.rig.distance = dist
+			scene.rig.pitch = deg_to_rad(float(OS.get_environment("LM_PITCH")) if OS.get_environment("LM_PITCH") != "" else -10.0)
+			scene.paused = false
+		if frame > 5 and scene.paused: scene.paused = false
+		var yaws := [0.0, PI / 2, PI, -PI / 2]
+		for i in 4:
+			if frame == 10 + i * 6:
+				scene.rig.yaw = k.rotation.y + yaws[i]
+			if frame == 14 + i * 6:
+				_save("gear_%d" % i)
+		if frame == 40:
+			get_tree().quit()
 	elif plan == "healshot":
 		var k: Unit = scene.party[2]
 		var a: Unit = scene.party[0]

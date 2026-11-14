@@ -327,6 +327,12 @@ func torch_mesh(v: Dictionary) -> Node3D:
 
 func shield_mesh(v: Dictionary) -> Node3D:
 	var root := Node3D.new()
+	if str(v.get("model", "")) != "" and ResourceLoader.exists(str(v.get("model", ""))):
+		root.add_child(ModelFit.shield(v))
+		if using_model:
+			root.rotation = Vector3(0, PI / 2, 0)
+			root.position = Vector3(-0.12, 0.0, -0.02)
+		return root
 	var face := MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
 	var kite := str(v.get("mesh", "")) == "kite_shield"

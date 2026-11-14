@@ -90,8 +90,13 @@
       "ability": "str",
       "reach": 1.6,
       "visual": {
-        "mesh": "mace",
+        "model": "res://assets/weapons/mace/scene.gltf",
         "length": 0.7,
+        "flip": true,
+        "grip": 0.18,
+        "brightness": 1.1,
+        "metallic": 0.5,
+        "mesh": "mace",
         "color": "#a8a8a8"
       }
     },
@@ -203,9 +208,24 @@
       "type": "shield",
       "ac": 2,
       "visual": {
+        "model": "res://assets/weapons/medieval_shield/scene.gltf",
+        "size": 0.8,
+        "offset": [
+          0.13,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "brightness": 1.15,
+        "metallic": 0.5,
         "mesh": "kite_shield",
         "color": "#b8bec6",
-        "rim": "#c9a24a"
+        "rim": "#c9a24a",
+        "flip": true
       }
     },
     {

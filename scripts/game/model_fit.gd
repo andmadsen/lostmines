@@ -85,6 +85,71 @@ static func weapon(v: Dictionary) -> Node3D:
 	return holder
 
 
+## Fits a downloaded shield: its flat side (thinnest direction) faces along
+## -X (away from the forearm, like the built-in shields), its longest side
+## points up (+Y), it is centred on the origin and scaled so its largest
+## dimension equals "size" (metres). "flip" turns it around if the inside
+## faces out; "rotation" [x,y,z] and "offset" [x,y,z] fine-tune it.
+static func shield(v: Dictionary) -> Node3D:
+	var path := str(v.get("model", ""))
+	var holder := Node3D.new()
+	if path == "" or not ResourceLoader.exists(path):
+		return holder
+	var model: Node3D = (load(path) as PackedScene).instantiate()
+	holder.add_child(model)
+	_tune_materials(model, float(v.get("brightness", 1.0)), float(v.get("metallic", -1.0)))
+	var verts := _collect(model)
+	if verts.size() < 4:
+		return holder
+	var c := Vector3.ZERO
+	for p in verts:
+		c += p
+	c /= verts.size()
+	var cov := [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+	for p in verts:
+		var d := p - c
+		for i in 3:
+			for j in 3:
+				cov[i][j] += d[i] * d[j]
+	var a := _eigen(cov, Vector3(1, 0.3, 0.1))
+	var b := _eigen(_deflate(cov, a), Vector3(0.1, 1, 0.3))
+	b = (b - a * a.dot(b)).normalized()
+	var n := a.cross(b).normalized()
+	# the front of a shield bulges out: most of the surface sits behind the
+	# outermost point, so the far side along n with fewer vertices is the front
+	var lo := INF
+	var hi := -INF
+	var ext_a := 0.0
+	var ext_b := 0.0
+	for p in verts:
+		var d := p - c
+		lo = minf(lo, d.dot(n))
+		hi = maxf(hi, d.dot(n))
+		ext_a = maxf(ext_a, absf(d.dot(a)))
+		ext_b = maxf(ext_b, absf(d.dot(b)))
+	var mid := (lo + hi) * 0.5
+	var above := 0
+	for p in verts:
+		if (p - c).dot(n) > mid:
+			above += 1
+	if above > verts.size() / 2:
+		n = -n
+		b = -b
+	if bool(v.get("flip", false)):
+		n = -n
+		b = -b
+	var s := float(v.get("size", 0.7)) / (2.0 * maxf(ext_a, ext_b))
+	# columns: model n -> -X, a -> +Y, b -> Z (right-handed: (-n) x a = b)
+	var r := Basis(-n, a, b).transposed()
+	var basis := Basis(r.x * s, r.y * s, r.z * s)
+	model.transform = Transform3D(basis, -(basis * c))
+	var rot: Array = v.get("rotation", [0, 0, 0])
+	holder.rotation_degrees = Vector3(rot[0], rot[1], rot[2])
+	var off: Array = v.get("offset", [0, 0, 0])
+	holder.position = Vector3(off[0], off[1], off[2])
+	return holder
+
+
 ## Brightens a model's materials (copies them, so the original file is untouched).
 static func _tune_materials(root: Node3D, brightness: float, metallic: float) -> void:
 	if is_equal_approx(brightness, 1.0) and metallic < 0.0:
