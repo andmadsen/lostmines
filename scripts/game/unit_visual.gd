@@ -106,12 +106,18 @@ func _build_model(path: String) -> void:
 	body.add_child(model)
 	var skel: Skeleton3D = model.find_child("Skeleton3D", true, false)
 	anim_player = model.find_child("AnimationPlayer", true, false)
-	var aset: Dictionary = DataDB.animation_sets.get(str(look.get("animation_set", "")), {})
+	var set_id := str(look.get("animation_set", ""))
+	var aset: Dictionary = DataDB.animation_sets.get(set_id, {})
+	if set_id != "" and aset.is_empty():
+		push_warning("Animation set '%s' not found in data/animations.json" % set_id)
 	_walk_ref_speed = float(aset.get("walk_speed", 1.5))
 	if anim_player:
 		for key in ["idle", "walk", "attack", "death"]:
 			var p := str(aset.get(key, ""))
-			if p == "" or not ResourceLoader.exists(p):
+			if p == "":
+				continue
+			if not ResourceLoader.exists(p):
+				push_warning("Animation '%s' not found: %s (check data/animations.json, or restart if the file was just moved)" % [key, p])
 				continue
 			var src: Node = (load(p) as PackedScene).instantiate()
 			var sap: AnimationPlayer = src.find_child("AnimationPlayer", true, false)
