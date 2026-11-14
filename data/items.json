@@ -38,7 +38,9 @@
         "model": "res://assets/weapons/greatsword/scene.gltf",
         "length": 1.35,
         "mesh": "sword",
-        "color": "#c8ccd2"
+        "color": "#c8ccd2",
+        "brightness": 2.2,
+        "metallic": 0.45
       }
     },
     {

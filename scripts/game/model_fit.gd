@@ -9,7 +9,9 @@ class_name ModelFit
 
 ## Returns a Node3D holding the model, ready to add to a hand slot.
 ## v: the item's "visual" data ("model", "length", optional "flip",
-## "grip" (0..1 along the handle, default auto), "rotation" [x,y,z] degrees).
+## "grip" (0..1 along the handle, default auto), "rotation" [x,y,z] degrees,
+## "brightness" (multiplies the colours, 1 = as made) and "metallic"
+## (0..1; lower reads brighter in dark caves with little to reflect)).
 static func weapon(v: Dictionary) -> Node3D:
 	var path := str(v.get("model", ""))
 	var holder := Node3D.new()
@@ -17,6 +19,7 @@ static func weapon(v: Dictionary) -> Node3D:
 		return holder
 	var model: Node3D = (load(path) as PackedScene).instantiate()
 	holder.add_child(model)
+	_tune_materials(model, float(v.get("brightness", 1.0)), float(v.get("metallic", -1.0)))
 	var verts := _collect(model)
 	if verts.size() < 4:
 		return holder
@@ -80,6 +83,26 @@ static func weapon(v: Dictionary) -> Node3D:
 	var rot: Array = v.get("rotation", [0, 0, 0])
 	holder.rotation_degrees = Vector3(rot[0], rot[1], rot[2])
 	return holder
+
+
+## Brightens a model's materials (copies them, so the original file is untouched).
+static func _tune_materials(root: Node3D, brightness: float, metallic: float) -> void:
+	if is_equal_approx(brightness, 1.0) and metallic < 0.0:
+		return
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		for si in m.mesh.get_surface_count():
+			var src := m.get_active_material(si)
+			if not (src is StandardMaterial3D):
+				continue
+			var mat := (src as StandardMaterial3D).duplicate() as StandardMaterial3D
+			var c := mat.albedo_color
+			mat.albedo_color = Color(c.r * brightness, c.g * brightness, c.b * brightness, c.a)
+			if metallic >= 0.0:
+				mat.metallic = metallic
+			m.set_surface_override_material(si, mat)
 
 
 static func _collect(root: Node3D) -> PackedVector3Array:
