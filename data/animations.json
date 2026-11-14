@@ -1,11 +1,11 @@
 {
   "animation_sets": [
     {
-      "id": "humanoid_melee",
-      "idle": "res://assets/animations/idle.fbx",
-      "walk": "res://assets/animations/walk.fbx",
-      "attack": "res://assets/animations/attack.fbx",
-      "death": "res://assets/animations/death.fbx",
+      "id": "sword_shield",
+      "idle": "res://assets/animations/sword_shield/idle.fbx",
+      "walk": "res://assets/animations/sword_shield/walk.fbx",
+      "attack": "res://assets/animations/sword_shield/attack.fbx",
+      "death": "res://assets/animations/common/death.fbx",
       "walk_speed": 1.5,
       "grip": {
         "right": {

@@ -28,6 +28,11 @@ func _process(_d: float) -> void:
 			_save("fight2")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "anims":
+		if frame == 10:
+			var ap: AnimationPlayer = scene.party[0].visual.anim_player
+			print("animation libraries: ", ap.get_animation_library_list(), " playing: ", ap.current_animation)
+			get_tree().quit()
 	elif plan == "sword":
 		if frame == 20:
 			var a: Unit = scene.party[0]
