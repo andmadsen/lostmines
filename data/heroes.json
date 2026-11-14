@@ -138,11 +138,13 @@
       },
       "equipment": {
         "main_hand": "quarterstaff",
-        "off_hand": "torch",
+        "off_hand": "",
         "armor": "wizard_robe",
         "head": ""
       },
-      "inventory": [],
+      "inventory": [
+        "torch"
+      ],
       "cantrip": "fire_bolt"
     }
   ]
