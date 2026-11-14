@@ -10,7 +10,8 @@
       "visual": {
         "mesh": "sword",
         "length": 0.95,
-        "color": "#c8ccd2"
+        "color": "#c8ccd2",
+        "sheathe": "hip"
       }
     },
     {
@@ -23,7 +24,8 @@
       "visual": {
         "mesh": "axe",
         "length": 0.9,
-        "color": "#9aa0a8"
+        "color": "#9aa0a8",
+        "sheathe": "hip"
       }
     },
     {
@@ -53,7 +55,8 @@
       "visual": {
         "mesh": "sword",
         "length": 0.6,
-        "color": "#d0d4da"
+        "color": "#d0d4da",
+        "sheathe": "hip"
       }
     },
     {
@@ -66,7 +69,8 @@
       "visual": {
         "mesh": "sword",
         "length": 0.32,
-        "color": "#d0d4da"
+        "color": "#d0d4da",
+        "sheathe": "hip"
       }
     },
     {
@@ -79,7 +83,8 @@
       "visual": {
         "mesh": "sword",
         "length": 0.7,
-        "color": "#8a8478"
+        "color": "#8a8478",
+        "sheathe": "hip"
       }
     },
     {
@@ -97,7 +102,8 @@
         "brightness": 1.1,
         "metallic": 0.5,
         "mesh": "mace",
-        "color": "#a8a8a8"
+        "color": "#a8a8a8",
+        "sheathe": true
       }
     },
     {

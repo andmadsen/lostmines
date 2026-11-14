@@ -55,8 +55,9 @@ func _process(_d: float) -> void:
 	elif plan == "gearclose":
 		var k: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 2]
 		if frame == 5:
-			k.visual.set_armed(true)
-			k._calm = -999.0
+			if OS.get_environment("LM_SHEATHED") == "":
+				k.visual.set_armed(true)
+				k._calm = -999.0
 			scene.rig.focus(k.global_position + Vector3(0, 0.6, 0))
 			var dist := float(OS.get_environment("LM_DIST")) if OS.get_environment("LM_DIST") != "" else 2.6
 			scene.rig._target_distance = dist
@@ -71,6 +72,13 @@ func _process(_d: float) -> void:
 			if frame == 14 + i * 6:
 				_save("gear_%d" % i)
 		if frame == 40:
+			var vv: UnitVisual = k.visual
+			var inv := k.global_transform.affine_inverse()
+			print("hipdebug hip ", inv * vv.hip_slot.global_position, " back ", inv * vv.back_slot.global_position, " hand_r ", inv * vv.hand_r.global_position)
+			print("hip basis x ", (inv.basis * vv.hip_slot.global_basis.x).normalized(), " y ", (inv.basis * vv.hip_slot.global_basis.y).normalized(), " z ", (inv.basis * vv.hip_slot.global_basis.z).normalized(), " children ", vv.hip_slot.get_child_count(), " scale ", vv.hip_slot.global_basis.get_scale())
+			for mi in vv.hip_slot.find_children("*", "MeshInstance3D", true, false):
+				var ab: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
+				print("mesh ", mi.name, " center ", inv * ab.get_center(), " size ", ab.size, " visible ", (mi as MeshInstance3D).is_visible_in_tree())
 			get_tree().quit()
 	elif plan == "healshot":
 		var k: Unit = scene.party[2]

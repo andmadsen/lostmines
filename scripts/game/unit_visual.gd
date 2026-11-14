@@ -39,6 +39,8 @@ var _attack_len := 1.0
 var back_slot: Node3D = null      ## where the main weapon rests when sheathed
 var _main_weapon: Node3D = null
 var _main_slot: Node3D = null      ## the hand the main weapon is held in
+var hip_slot: Node3D = null       ## belt: where one-handed weapons hang when sheathed
+var _sheath_slot: Node3D = null    ## back_slot or hip_slot for the current weapon
 var _main_sheathes := true         ## false for bows: they stay in hand
 var attack_speed := 1.4
 var release_frac := 0.5            ## when in the attack animation an arrow leaves
@@ -150,6 +152,7 @@ func _build_model(path: String) -> void:
 	var grip: Dictionary = aset.get("grip", {})
 	hand_r = _bone_slot(skel, "mixamorig_RightHand", grip.get("right", {}))
 	back_slot = _bone_slot(skel, "mixamorig_Spine2", grip.get("back", {"position": [0.0, 0.12, -0.17], "rotation": [0, 0, 200]}))
+	hip_slot = _bone_slot(skel, "mixamorig_Hips", grip.get("hip", {"position": [-0.2, 0.02, 0.0], "rotation": [0, 0, -12]}))
 	armed = false
 	hand_l = _bone_slot(skel, "mixamorig_LeftHand", grip.get("left", {}))
 	head_slot = _bone_slot(skel, "mixamorig_Head", grip.get("head", {}))
@@ -189,6 +192,8 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 	_clear(extras)
 	if back_slot:
 		_clear(back_slot)
+	if hip_slot:
+		_clear(hip_slot)
 	_main_weapon = null
 	held_light = null
 	if using_model:
@@ -230,9 +235,11 @@ func _attach_items(equipment: Dictionary) -> void:
 		var mv: Dictionary = main.get("visual", {})
 		_main_weapon = weapon_mesh(mv)
 		_main_slot = hand_l if str(mv.get("hand", "right")) == "left" else hand_r
-		_main_sheathes = bool(mv.get("sheathe", true)) and back_slot != null
+		var sh = mv.get("sheathe", true)
+		_sheath_slot = hip_slot if str(sh) == "hip" else back_slot
+		_main_sheathes = (str(sh) == "hip" or (sh is bool and sh)) and _sheath_slot != null
 		if using_model and _main_sheathes and not armed:
-			back_slot.add_child(_main_weapon)
+			_sheath_slot.add_child(_main_weapon)
 		else:
 			_main_slot.add_child(_main_weapon)
 	var off := DataDB.item(str(equipment.get("off_hand", "")))
@@ -414,7 +421,7 @@ func set_armed(v: bool) -> void:
 		return
 	armed = v
 	if _main_weapon and is_instance_valid(_main_weapon):
-		_main_weapon.reparent(_main_slot if v else back_slot, false)
+		_main_weapon.reparent(_main_slot if v else _sheath_slot, false)
 
 
 ## Seconds from the start of an attack until an arrow is released.
