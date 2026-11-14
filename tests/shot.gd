@@ -52,6 +52,43 @@ func _process(_d: float) -> void:
 			_save("bow_arrow")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "healshot":
+		var k: Unit = scene.party[2]
+		var a: Unit = scene.party[0]
+		if frame == 5:
+			a.global_position = k.global_position + Vector3(1.2, 0, -0.6)
+			a.take_damage(10, null)
+			scene.rig.focus(k.global_position + Vector3(0.6, 0.6, -0.3))
+			scene.rig._target_distance = 4.5
+			scene.rig.distance = 4.5
+			scene.rig.pitch = deg_to_rad(-18.0)
+			scene.rig.yaw = PI + 0.9
+			scene.paused = false
+		if frame > 5 and scene.paused: scene.paused = false
+		if frame == 20:
+			k.order_heal(a)
+		if frame == 50:
+			_save("heal_cast")
+		if frame == 70:
+			_save("heal_glow")
+			get_tree().quit()
+	elif plan == "heal":
+		var k: Unit = scene.party[2]
+		var a: Unit = scene.party[0]
+		if frame == 5:
+			Engine.max_fps = 60
+			print("keldrin slots ", k.spell_slots, " spells ", DataDB.heroes["keldrin"].get("spells"))
+			a.take_damage(30, null)
+			print("aurelia down: ", a.down, " hp ", a.hp)
+		if frame > 5 and scene.paused: scene.paused = false
+		if frame == 5 + 60 * 6:
+			print("aurelia down: ", a.down, " hp ", a.hp, "/", a.max_hp, " keldrin slots ", k.spell_slots)
+			scene.select_unit(k, false)
+			scene.cmd_heal()
+		if frame == 5 + 60 * 12:
+			print(scene.hud.log_label.get_parsed_text())
+			print("aurelia hp ", a.hp, " keldrin slots ", k.spell_slots)
+			get_tree().quit()
 	elif plan == "bowlogic":
 		var p: Unit = scene.party[1]
 		if frame == 5:

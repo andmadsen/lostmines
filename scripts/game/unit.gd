@@ -23,7 +23,8 @@ var monster_attack: Dictionary = {}
 
 var cooldown := 0.0
 var path: Array[Vector3] = []
-var order := ""          ## "", "move", "attack"
+var order := ""          ## "", "move", "attack", "heal"
+var spell_slots := 0     ## level 1 spell slots left
 var target: Unit = null
 var ai_state := "idle"   ## monsters: idle -> combat
 var down := false        ## 0 HP
@@ -33,6 +34,7 @@ var visual: UnitVisual
 var ring: MeshInstance3D
 var _repath := 0.0
 var _facing := 0.0
+var _heal_spell := ""
 var _calm := 0.0          ## seconds since the last fight nearby
 
 
@@ -70,6 +72,8 @@ func setup_monster(id: String) -> void:
 func _apply_hero_data(d: Dictionary, first: bool) -> void:
 	abilities = d.get("abilities", {})
 	speed = float(d.get("speed", 3.0))
+	if first:
+		spell_slots = int(d.get("spell_slots", 0))
 	var new_max := int(d.get("hp", 10))
 	if first:
 		max_hp = new_max
@@ -207,6 +211,55 @@ func order_attack(t: Unit) -> void:
 	_repath = 0.0
 
 
+func knows_spell(id: String) -> bool:
+	return not is_monster and id in DataDB.heroes.get(data_id, {}).get("spells", [])
+
+
+## Cast Cure Wounds (or another healing spell) on an ally: walk up, touch, heal.
+func order_heal(t: Unit, spell_id := "cure_wounds") -> bool:
+	if down or t == null or not knows_spell(spell_id):
+		return false
+	if spell_slots <= 0:
+		game.log_line("%s has no spell slots left for %s." % [game.name_tag(self), DataDB.spells.get(spell_id, {}).get("name", spell_id)])
+		return false
+	order = "heal"
+	target = t
+	_heal_spell = spell_id
+	path.clear()
+	_repath = 0.0
+	return true
+
+
+func _do_heal(t: Unit, spell_id: String) -> void:
+	var sp: Dictionary = DataDB.spells.get(spell_id, {})
+	spell_slots -= 1
+	var delay := visual.cast()
+	cooldown = Rules.ROUND * 0.5
+	var who: String = game.name_tag(self)
+	var amount := maxi(1, Rules.roll(str(sp.get("heal", "1d8"))) + Rules.mod(ab(str(sp.get("ability", "wis")))))
+	var col := Color.html(str(sp.get("color", "#ffe9a0")))
+	var spell_name := str(sp.get("name", "Heal"))
+	var tw := create_tween()
+	tw.tween_interval(delay)
+	tw.tween_callback(func():
+		if not is_instance_valid(t):
+			return
+		t.receive_healing(amount)
+		game.heal_glow(t.global_position, col)
+		game.log_line("%s casts %s on %s: [color=#9fe89f]+%d HP[/color] (%d slot%s left)" % [who, spell_name, game.name_tag(t), amount, spell_slots, "" if spell_slots == 1 else "s"]))
+
+
+func receive_healing(amount: int) -> void:
+	var was_down := down
+	hp = mini(max_hp, hp + amount)
+	game.float_text(global_position + Vector3(0, 2.0, 0), "+%d" % amount, Color(0.5, 1.0, 0.5))
+	if was_down and hp > 0:
+		down = false
+		visual.revive()
+		set_selected(selected)
+		game.log_line("%s gets back up!" % game.name_tag(self))
+
+
 func stop() -> void:
 	order = ""
 	target = null
@@ -225,7 +278,25 @@ func tick(delta: float) -> void:
 	elif order == "" and path.is_empty():
 		_party_ai()
 
-	if order == "attack":
+	if order == "heal":
+		if target == null or target.hp >= target.max_hp:
+			stop()
+		else:
+			var hr := float(DataDB.spells.get(_heal_spell, {}).get("range", 1.8)) + 0.35
+			if _flat(global_position).distance_to(_flat(target.global_position)) <= hr:
+				path.clear()
+				_face(target.global_position)
+				if cooldown <= 0.0:
+					var t := target
+					stop()
+					_do_heal(t, _heal_spell)
+			else:
+				_repath -= delta
+				if _repath <= 0.0 or path.is_empty():
+					path = game.find_path(global_position, target.global_position)
+					_repath = 0.5
+				moving = _follow_path(delta)
+	elif order == "attack":
 		if target == null or target.down:
 			stop()
 		else:
@@ -355,6 +426,12 @@ func take_damage(dmg: int, src: Unit, crit := false) -> void:
 func _party_ai() -> void:
 	if cooldown > 0.3:
 		return
+	# healers look after the party first: anyone down, or below a third of their HP
+	if spell_slots > 0 and knows_spell("cure_wounds"):
+		var hurt: Unit = game.most_wounded(self)
+		if hurt and (hurt.down or hurt.hp * 3 < hurt.max_hp):
+			order_heal(hurt)
+			return
 	var best: Unit = null
 	var prof := attack_profile()
 	var bd := 24.0 if bool(prof.get("ranged", false)) else 9.0

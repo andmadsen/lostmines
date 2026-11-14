@@ -76,8 +76,8 @@
       "speed": 2.6
     },
     {
-      "id": "dagna",
-      "name": "Dagna Flamebeard",
+      "id": "keldrin",
+      "name": "Keldrin",
       "race": "Dwarf",
       "class": "Cleric",
       "level": 1,
@@ -94,15 +94,24 @@
         "skin": "#c98e6a",
         "hair": "#b5532a",
         "scale": 0.82,
-        "width": 1.2
+        "width": 1.2,
+        "model": "res://assets/characters/keldrin.fbx",
+        "animation_set": "mace_shield"
       },
       "equipment": {
         "main_hand": "mace",
         "off_hand": "steel_shield",
         "armor": "chain_mail",
-        "head": "iron_helm"
+        "head": ""
       },
-      "inventory": []
+      "inventory": [
+        "iron_helm"
+      ],
+      "spells": [
+        "cure_wounds"
+      ],
+      "spell_slots": 2,
+      "speed": 2.6
     },
     {
       "id": "shirvani",

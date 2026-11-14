@@ -19,4 +19,4 @@ by Vlasov Daniil (https://sketchfab.com/dan741vlasov) is licensed under CC-BY-4.
 
 *Lost Mine of Phandelver* belongs to Wizards of the Coast. This is a private fan project.
 
-"Cool Bow" (https://sketchfab.com/3d-models/cool-bow-19efcbf24f254d37877a794aeedb43db) by Incg5764 is licensed under CC-BY-4.0. Pip's model (Erika Archer), Shirvani's model and all animations are from Mixamo.
+"Cool Bow" (https://sketchfab.com/3d-models/cool-bow-19efcbf24f254d37877a794aeedb43db) by Incg5764 is licensed under CC-BY-4.0. Pip's model (Erika Archer), Shirvani's and Keldrin's models and all animations are from Mixamo.

@@ -25,7 +25,7 @@ const LAYOUT: Array[String] = [
 	"##########...#########",
 	"######################",
 ]
-const HERO_IDS: Array[String] = ["aurelia", "pip", "dagna", "shirvani"]
+const HERO_IDS: Array[String] = ["aurelia", "pip", "keldrin", "shirvani"]
 const HERO_START: Array[Vector2i] = [Vector2i(11, 14), Vector2i(10, 15), Vector2i(12, 15), Vector2i(11, 16)]
 const GOBLINS: Array[Vector2i] = [Vector2i(11, 3), Vector2i(8, 4), Vector2i(14, 5)]
 
@@ -204,6 +204,8 @@ func _unhandled_input(event: InputEvent) -> void:
 					rig.focus(selection[0].global_position)
 			KEY_X:
 				cmd_stop()
+			KEY_C:
+				cmd_heal()
 			KEY_F5:
 				get_tree().reload_current_scene()
 			KEY_A:
@@ -436,6 +438,66 @@ func _nearest_floor(c: Vector2i) -> Vector2i:
 				if cave.is_floor(x, y):
 					return Vector2i(x, y)
 	return c
+
+
+## The party member who most needs healing (unconscious first), or null.
+func most_wounded(near: Unit) -> Unit:
+	var best: Unit = null
+	var bs := 2.0
+	for u in party:
+		if u.hp >= u.max_hp:
+			continue
+		var score := float(u.hp) / float(u.max_hp) - (1.0 if u.down else 0.0) + near.global_position.distance_to(u.global_position) * 0.005
+		if score < bs:
+			bs = score
+			best = u
+	return best
+
+
+## Selected healer casts Cure Wounds on whoever needs it most.
+func cmd_heal() -> void:
+	for u in selection:
+		if u.knows_spell("cure_wounds"):
+			var t := most_wounded(u)
+			if t == null:
+				log_line("Nobody needs healing right now.")
+			else:
+				u.order_heal(t)
+			return
+	log_line("Select Keldrin (or another healer) to cast Cure Wounds.")
+
+
+## Soft golden light rising around a healed creature.
+func heal_glow(p: Vector3, col: Color) -> void:
+	var light := OmniLight3D.new()
+	light.light_color = col
+	light.light_energy = 0.0
+	light.omni_range = 4.0
+	add_child(light)
+	light.global_position = p + Vector3(0, 1.2, 0)
+	var ring_mi := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.45
+	tm.outer_radius = 0.55
+	ring_mi.mesh = tm
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(col, 0.8)
+	m.emission_enabled = true
+	m.emission = col
+	m.emission_energy_multiplier = 3.0
+	ring_mi.material_override = m
+	add_child(ring_mi)
+	ring_mi.global_position = p + Vector3(0, 0.1, 0)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(light, "light_energy", 4.0, 0.25)
+	tw.tween_property(ring_mi, "position:y", ring_mi.position.y + 1.8, 1.0)
+	tw.tween_property(m, "albedo_color:a", 0.0, 1.0)
+	tw.chain().tween_property(light, "light_energy", 0.0, 0.4)
+	tw.chain().tween_callback(func():
+		light.queue_free()
+		ring_mi.queue_free())
 
 
 ## True if a living hostile creature stands right next to u.

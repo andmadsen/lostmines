@@ -25,6 +25,8 @@ var walk_amount := 0.0
 var _phase := 0.0
 var _swing := 0.0
 var _dead := false
+var _cast_len := 0.0
+var cast_release := 0.5
 var held_light: OmniLight3D = null
 
 # rigged model
@@ -120,8 +122,9 @@ func _build_model(path: String) -> void:
 	_walk_ref_speed = float(aset.get("walk_speed", 1.5)) * float(look.get("scale", 1.0))
 	release_frac = float(aset.get("release", 0.5))
 	attack_speed = float(aset.get("attack_speed", 1.4))
+	cast_release = float(aset.get("cast_release", 0.5))
 	if anim_player:
-		for key in ["idle", "walk", "attack", "death"]:
+		for key in ["idle", "walk", "attack", "death", "cast"]:
 			var p := str(aset.get(key, ""))
 			if p == "":
 				continue
@@ -135,6 +138,8 @@ func _build_model(path: String) -> void:
 				anim.loop_mode = Animation.LOOP_LINEAR if key in ["idle", "walk"] else Animation.LOOP_NONE
 				if key == "attack":
 					_attack_len = anim.length
+				if key == "cast":
+					_cast_len = anim.length
 				var lib := AnimationLibrary.new()
 				lib.add_animation(key, anim)
 				if anim_player.has_animation_library(key):
@@ -423,6 +428,31 @@ func swing() -> void:
 			_swing = _attack_len / attack_speed
 		return
 	_swing = 0.4
+
+
+## Plays the spellcasting animation; returns seconds until the spell takes effect.
+func cast() -> float:
+	if using_model and anim_player and anim_player.has_animation("cast/cast"):
+		anim_player.play("cast/cast", 0.15)
+		anim_player.seek(0.0, true)
+		anim_player.speed_scale = 1.0
+		_swing = _cast_len
+		return _cast_len * cast_release
+	swing()
+	return 0.3
+
+
+## Gets back up after being healed from 0 HP.
+func revive() -> void:
+	_dead = false
+	if using_model:
+		_swing = 0.0
+		if anim_player:
+			anim_player.speed_scale = 1.0
+			anim_player.play("idle/idle", 0.4)
+		return
+	var tw := create_tween()
+	tw.tween_property(body, "rotation:x", 0.0, 0.4)
 
 
 func die() -> void:
