@@ -44,6 +44,7 @@ var _drag_active := false
 var _hover: Unit = null
 var _sighted := false
 var _arrows: Array[Dictionary] = []
+var targeting: Dictionary = {}   ## waiting for a target click: {"kind", "spell", "units"}
 
 
 func _ready() -> void:
@@ -173,7 +174,9 @@ func _try_nudge(u: Unit, v: Vector2) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
-		if mb.button_index == MOUSE_BUTTON_LEFT:
+		if mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed and not targeting.is_empty():
+			cancel_targeting()
+		elif mb.button_index == MOUSE_BUTTON_LEFT:
 			if mb.pressed:
 				_dragging = true
 				_drag_active = false
@@ -205,7 +208,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_X:
 				cmd_stop()
 			KEY_C:
-				cmd_heal()
+				use_action("cure_wounds")
+			KEY_ESCAPE:
+				cancel_targeting()
 			KEY_F5:
 				get_tree().reload_current_scene()
 			KEY_A:
@@ -219,6 +224,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _click(pos: Vector2, shift: bool) -> void:
 	var u := _unit_at(pos)
+	if not targeting.is_empty():
+		_target_clicked(u)
+		return
 	if u:
 		if u.faction == "party":
 			select_unit(u, shift)
@@ -336,6 +344,104 @@ func _update_hover(pos: Vector2) -> void:
 		hud.show_tooltip(txt, pos)
 	else:
 		hud.show_tooltip("", pos)
+
+
+# ---------------- action bar ----------------
+## The actions the action bar shows for the current selection.
+func actions_for(sel: Array) -> Array:
+	var out: Array = []
+	if sel.is_empty():
+		return out
+	var u: Unit = sel[0]
+	var single := sel.size() == 1
+	var w := DataDB.item(str(u.equipment.get("main_hand", "")))
+	var wname := str(w.get("name", "Fists"))
+	var ranged := bool(w.get("ranged", false))
+	var cid := str(DataDB.heroes.get(u.data_id, {}).get("cantrip", "")) if single else ""
+	var choose := " Then click an enemy."
+	if single:
+		out.append({"id": "attack", "icon": "shoot" if ranged else "attack", "active": cid != "" and u.attack_mode == "weapon",
+			"tip": "Attack with %s%s\n%s" % [wname, " (ranged)" if ranged else "", choose.strip_edges()]})
+	else:
+		out.append({"id": "attack", "icon": "attack", "tip": "Attack\nEveryone attacks the enemy you click."})
+	if cid != "":
+		var sp: Dictionary = DataDB.spells.get(cid, {})
+		out.append({"id": "cantrip", "icon": str(sp.get("icon", cid)), "active": u.attack_mode != "weapon",
+			"tip": "%s (cantrip)\n%s\nUnlimited. Click an enemy." % [sp.get("name", cid), sp.get("description", "")]})
+	if single:
+		for sid in DataDB.heroes.get(u.data_id, {}).get("spells", []):
+			var sp: Dictionary = DataDB.spells.get(str(sid), {})
+			out.append({"id": str(sid), "icon": str(sp.get("icon", sid)), "enabled": u.spell_slots > 0, "badge": str(u.spell_slots),
+				"tip": "%s (level %d)\n%s\n%d spell slots left. Click an ally or their portrait.%s" % [sp.get("name", sid), int(sp.get("level", 1)), sp.get("description", ""), u.spell_slots, "  [C]" if str(sid) == "cure_wounds" else ""]})
+	out.append({"id": "stop", "icon": "stop", "tip": "Stop  [X]\nCancel orders."})
+	return out
+
+
+func use_action(id: String) -> void:
+	if selection.is_empty():
+		return
+	match id:
+		"stop":
+			cancel_targeting()
+			cmd_stop()
+		"attack":
+			if selection.size() == 1:
+				selection[0].attack_mode = "weapon"
+			_begin_target("attack", "", "Choose an enemy to attack.")
+		"cantrip":
+			selection[0].attack_mode = "cantrip"
+			var sp: Dictionary = DataDB.spells.get(str(DataDB.heroes.get(selection[0].data_id, {}).get("cantrip", "")), {})
+			_begin_target("attack", "", "Choose an enemy for %s." % sp.get("name", "the spell"))
+		_:
+			if DataDB.spells.has(id):
+				var caster: Unit = null
+				for u in selection:
+					if u.knows_spell(id):
+						caster = u
+				if caster == null:
+					log_line("Select someone who knows %s." % DataDB.spells[id].get("name", id))
+					return
+				if caster.spell_slots <= 0:
+					log_line("%s has no spell slots left." % name_tag(caster))
+					return
+				targeting = {"kind": "spell", "spell": id, "units": [caster]}
+				Input.set_default_cursor_shape(Input.CURSOR_CROSS)
+				targeting["hint"] = "%s: choose an ally (or their portrait).  Right click to cancel." % DataDB.spells[id].get("name", id)
+
+
+func _begin_target(kind: String, spell: String, hint: String) -> void:
+	targeting = {"kind": kind, "spell": spell, "units": selection.duplicate(), "hint": hint + "  Right click to cancel."}
+	Input.set_default_cursor_shape(Input.CURSOR_CROSS)
+
+
+func cancel_targeting() -> void:
+	targeting = {}
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+
+
+func target_hint() -> String:
+	return str(targeting.get("hint", ""))
+
+
+func _target_clicked(u: Unit) -> void:
+	var t := targeting
+	if u == null:
+		return
+	if t["kind"] == "attack" and u.faction == "enemy":
+		for s in t["units"]:
+			(s as Unit).order_attack(u)
+		cancel_targeting()
+	elif t["kind"] == "spell" and u.faction == "party":
+		(t["units"][0] as Unit).order_heal(u, str(t["spell"]))
+		cancel_targeting()
+
+
+## Portraits select heroes, or pick the target of a healing spell.
+func portrait_clicked(u: Unit, shift: bool) -> void:
+	if str(targeting.get("kind", "")) == "spell":
+		_target_clicked(u)
+		return
+	select_unit(u, shift)
 
 
 # ---------------- commands ----------------

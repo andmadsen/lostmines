@@ -107,6 +107,43 @@ func _process(_d: float) -> void:
 		if frame == 60:
 			_save("gob_attack2")
 			get_tree().quit()
+	elif plan == "uilogic":
+		if frame == 5:
+			Engine.max_fps = 60
+			scene.paused = false
+			var w: Unit = scene.party[3]
+			scene.select_unit(w)
+			print("actions ", scene.actions_for(scene.selection).map(func(a): return a["id"]))
+			scene.use_action("attack")
+			print("mode ", w.attack_mode, " profile ", w.attack_profile()["name"], " hint ", scene.target_hint())
+			scene._target_clicked(scene.units[4])
+			print("order ", w.order, " targeting ", scene.targeting)
+			scene.use_action("cantrip")
+			print("mode ", w.attack_mode, " profile ", w.attack_profile()["name"])
+			scene.cancel_targeting()
+			scene.party[0].take_damage(30, null)
+			scene.select_unit(scene.party[2])
+			scene.use_action("cure_wounds")
+			scene.portrait_clicked(scene.party[0], false)
+			print("keldrin order ", scene.party[2].order, " target ", scene.party[2].target.display_name)
+		if frame == 5 + 60 * 5:
+			print("aurelia down ", scene.party[0].down, " hp ", scene.party[0].hp)
+			get_tree().quit()
+	elif plan == "ui":
+		if frame == 5:
+			scene.paused = false
+			scene.party[1].take_damage(5, null)
+			scene.select_unit(scene.party[2])
+		if frame == 60:
+			scene.use_action("cure_wounds")
+		if frame == 70:
+			_save("ui_cleric")
+			scene.cancel_targeting()
+			scene.select_unit(scene.party[3])
+		if frame == 85:
+			_save("ui_wizard")
+			print(scene.hud.log_label.get_parsed_text())
+			get_tree().quit()
 	elif plan == "heights":
 		if frame == 20:
 			for u in scene.party:

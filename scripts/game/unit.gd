@@ -25,6 +25,7 @@ var cooldown := 0.0
 var path: Array[Vector3] = []
 var order := ""          ## "", "move", "attack", "heal"
 var spell_slots := 0     ## level 1 spell slots left
+var attack_mode := ""    ## casters: "" / "cantrip" = attack spell, "weapon" = weapon
 var target: Unit = null
 var ai_state := "idle"   ## monsters: idle -> combat
 var down := false        ## 0 HP
@@ -166,7 +167,7 @@ func attack_profile() -> Dictionary:
 		return monster_attack
 	# casters with an attack cantrip use it instead of their weapon
 	var cid := str(DataDB.heroes.get(data_id, {}).get("cantrip", ""))
-	if cid != "" and DataDB.spells.has(cid):
+	if cid != "" and DataDB.spells.has(cid) and attack_mode != "weapon":
 		var sp: Dictionary = DataDB.spells[cid]
 		var cm := Rules.mod(ab("int"))
 		return {"name": str(sp.get("name", "Spell")), "to_hit": Rules.PROFICIENCY + cm, "damage": str(sp.get("damage", "1d10")),

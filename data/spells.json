@@ -15,7 +15,8 @@
         "color": "#ff8a2a",
         "speed": 22.0,
         "size": 0.12
-      }
+      },
+      "icon": "fire_bolt"
     },
     {
       "id": "cure_wounds",
@@ -26,7 +27,8 @@
       "heal": "1d8",
       "ability": "wis",
       "range": 1.8,
-      "color": "#ffe9a0"
+      "color": "#ffe9a0",
+      "icon": "cure_wounds"
     }
   ]
 }

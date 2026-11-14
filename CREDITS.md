@@ -28,3 +28,12 @@ by Vlasov Daniil (https://sketchfab.com/dan741vlasov) is licensed under CC-BY-4.
 "Medieval Shield" (https://sketchfab.com/3d-models/medieval-shield-b98b8f64d935415aab0fe9b70074511f) by Artem Mykhailov is licensed under CC-BY-4.0.
 "Neolithic Stone Club" (https://sketchfab.com/3d-models/neolithic-stone-club-4a14743e04cd46b9b5075af5997cc439) by Asylum Nox is licensed under CC-BY-4.0.
 "Goblin" (https://sketchfab.com/3d-models/goblin-5d4d2fe8d7d841f7ba01afe02e4cad03) by Pratyush Gupta (https://sketchfab.com/pratyush_gupta) is licensed under CC-BY-4.0.
+
+## Interface
+
+- **Fonts:** Cinzel (Natanael Gama) and EB Garamond (Georg Duffner, Octavio Pardo) — SIL Open Font License 1.1, from Google Fonts. Licence texts in `ui/fonts/`.
+- **Icons** (`ui/icons/`) from game-icons.net, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/), recoloured:
+  crossed swords, fire ray, campfire, breastplate, visored helm, hourglass, cycle — by Lorc;
+  bow & arrow, healing, stop sign, switch weapon, torch, info, spell book — by Delapouite;
+  shield — by sbed.
+- **Panels, frames and slots** (`ui/skin/`) are drawn by `tools/make_ui_skin.py` for this project.
