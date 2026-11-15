@@ -189,7 +189,13 @@ twohand_pack, bow_pack, spell_pack). They work on every hero (retargeting).
   Knight Armor" + the pauldrons of "Avacynian Knight Armor" (`shoulders_only`).
 * Feet on the floor: `retarget.gd` shifts the hips per animation so the lowest
   foot stays as high above the floor as in the Mixamo source (bodies with other
-  leg proportions sank ~8 cm before).
+  leg proportions sank ~8 cm before). It compares how far the foot *lifts off
+  its rest height* (scaled by hip height), never the raw foot height: scaling
+  raw heights blew jumps and death falls up by metres (the hero "jumped out of
+  the screen").
+* Check every set after changing the retarget: `LM_PLAN=rootcheck` prints any
+  animation where the hips leave the spot (> 0.25 m) or rise above 1.6 m;
+  add `LM_FEET=1` for the average foot height in idle/walk (should be ~0-4 cm).
 * Feet and toes are NOT direction-aligned in the retarget (both rest poses stand
   flat; aligning ankle-to-toe directions put the hero on tiptoe).
 

@@ -425,6 +425,54 @@ func _process(_d: float) -> void:
 				_save("walk_%d" % i)
 		if frame == 66:
 			get_tree().quit()
+	elif plan == "rootcheck":
+		# prints how far the hips move in every animation of every set
+		if frame == 5:
+			var hero := OS.get_environment("LM_HERO")
+			for hu in scene.party:
+				if hero != "" and hu.data_id != hero:
+					continue
+				var v = hu.visual
+				var sk: Skeleton3D = v._skel
+				var hb := sk.find_bone("mixamorig_Hips")
+				if hb < 0:
+					hb = sk.find_bone("mixamorig:Hips")
+				for sid in DataDB.animation_sets.keys():
+					v._set_id = ""
+					v._load_set(sid)
+					var ap: AnimationPlayer = v.anim_player
+					for an in ap.get_animation_list():
+						var a: Animation = ap.get_animation(an)
+						ap.play(an, 0.0)
+						var first := Vector3.ZERO
+						var mx := 0.0
+						var my := -9.0
+						var steps := 30
+						var lows := 0.0
+						var feet := [sk.find_bone("mixamorig_LeftToeBase"), sk.find_bone("mixamorig_RightToeBase"), sk.find_bone("mixamorig_LeftFoot"), sk.find_bone("mixamorig_RightFoot")]
+						for i in steps + 1:
+							ap.seek(a.length * i / steps, true)
+							var hp: Vector3 = sk.get_bone_global_pose(hb).origin
+							var wp: Vector3 = sk.global_transform * hp - hu.global_position
+							if i == 0:
+								first = wp
+							mx = maxf(mx, Vector2(wp.x - first.x, wp.z - first.z).length())
+							my = maxf(my, wp.y)
+							var lo := 9.0
+							for fb in feet:
+								lo = minf(lo, (sk.global_transform * sk.get_bone_global_pose(fb).origin).y - hu.global_position.y)
+							lows += lo / (steps + 1)
+						if OS.get_environment("LM_FEET") != "" and (an.begins_with("idle") or an.begins_with("walk")):
+							print("FEET %s %s %s %.3f" % [hu.data_id, sid, an, lows])
+						var ky := -9.0
+						for ti in a.get_track_count():
+							if a.track_get_type(ti) == Animation.TYPE_POSITION_3D:
+								for k in a.track_get_key_count(ti):
+									ky = maxf(ky, a.track_get_key_value(ti, k).y)
+						if mx > 0.25 or my > 1.6:
+							print("KEYMAX ", ky, " skel=", sk.global_transform.basis.get_scale(), " unit=", hu.global_position)
+							print("ROOT %s %s %s xz=%.2f maxy=%.2f" % [hu.data_id, sid, an, mx, my])
+			get_tree().quit()
 	elif plan == "model":
 		var a: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 0]
 		if frame == 2 and OS.get_environment("LM_MODEL") != "":

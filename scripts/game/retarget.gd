@@ -130,15 +130,24 @@ static func convert(anim: Animation, src: Skeleton3D, dst: Skeleton3D, dst_path:
 ## foot is, on average, as high above the floor as in the source animation.
 static func _fix_ground(out: Animation, anim: Animation, src: Skeleton3D, dst: Skeleton3D, rot_track: Dictionary, pos_track: Dictionary, hips_s: int, hips_t: int, hips_track: int) -> void:
 	var feet := ["mixamorig_LeftFoot", "mixamorig_RightFoot", "mixamorig_LeftToeBase", "mixamorig_RightToeBase"]
-	var dst_tracks := {}
+	# the target's own tracks, rotation and position kept apart (the hips have both)
+	var dst_rot := {}
+	var dst_pos := {}
 	for i in out.get_track_count():
-		dst_tracks[dst.find_bone(str(out.track_get_path(i).get_concatenated_subnames()))] = i
+		var bi := dst.find_bone(str(out.track_get_path(i).get_concatenated_subnames()))
+		if out.track_get_type(i) == Animation.TYPE_ROTATION_3D:
+			dst_rot[bi] = i
+		elif out.track_get_type(i) == Animation.TYPE_POSITION_3D:
+			dst_pos[bi] = i
 	var src_rest_low := INF
 	var dst_rest_low := INF
 	for f in feet:
 		src_rest_low = minf(src_rest_low, src.get_bone_global_rest(src.find_bone(f)).origin.y)
 		dst_rest_low = minf(dst_rest_low, dst.get_bone_global_rest(dst.find_bone(f)).origin.y)
-	var k := dst_rest_low / maxf(0.001, src_rest_low)
+	# how much a foot lifts off its rest height, scaled by the leg length
+	var hs := src.get_bone_global_rest(hips_s).origin.y
+	var ht := dst.get_bone_global_rest(hips_t).origin.y
+	var k := ht / maxf(0.01, hs)
 	var total := 0.0
 	var n := 0
 	var frames := maxi(1, int(ceil(anim.length * FPS)))
@@ -148,8 +157,8 @@ static func _fix_ground(out: Animation, anim: Animation, src: Skeleton3D, dst: S
 		var d_low := INF
 		for name in feet:
 			s_low = minf(s_low, _bone_pos(src, src.find_bone(name), t, anim, rot_track, pos_track).y)
-			d_low = minf(d_low, _bone_pos(dst, dst.find_bone(name), t, out, {}, {}, dst_tracks).y)
-		total += s_low * k - d_low
+			d_low = minf(d_low, _bone_pos(dst, dst.find_bone(name), t, out, dst_rot, dst_pos).y)
+		total += dst_rest_low + (s_low - src_rest_low) * k - d_low
 		n += 1
 	var dy := total / maxi(1, n)
 	for ki in out.track_get_key_count(hips_track):
@@ -158,7 +167,7 @@ static func _fix_ground(out: Animation, anim: Animation, src: Skeleton3D, dst: S
 
 
 ## Skeleton-space position of a bone at time t of an animation.
-static func _bone_pos(s: Skeleton3D, bi: int, t: float, anim: Animation, rot_track: Dictionary, pos_track: Dictionary, by_bone := {}) -> Vector3:
+static func _bone_pos(s: Skeleton3D, bi: int, t: float, anim: Animation, rot_track: Dictionary, pos_track: Dictionary) -> Vector3:
 	var chain: Array[int] = []
 	var b := bi
 	while b >= 0:
@@ -171,14 +180,6 @@ static func _bone_pos(s: Skeleton3D, bi: int, t: float, anim: Animation, rot_tra
 		var o := rest.origin
 		var ri: int = rot_track.get(c, -1)
 		var pi: int = pos_track.get(c, -1)
-		if by_bone.has(c):
-			var ti: int = by_bone[c]
-			if anim.track_get_type(ti) == Animation.TYPE_ROTATION_3D:
-				ri = ti
-		if not by_bone.is_empty():
-			for ti in anim.get_track_count():
-				if anim.track_get_type(ti) == Animation.TYPE_POSITION_3D and s.find_bone(str(anim.track_get_path(ti).get_concatenated_subnames())) == c:
-					pi = ti
 		if ri >= 0:
 			q = anim.rotation_track_interpolate(ri, t)
 		if pi >= 0:
