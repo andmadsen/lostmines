@@ -73,7 +73,7 @@ OUTFITS = {
 SMOOTH = {"leather": 14, "chain": 8, "under_top": 4, "plate": 8}
 
 
-def _material(kind, colour):
+def _material(kind, colour, tex_scale=None):
     m = bpy.data.materials.new(f"{kind}_{len(bpy.data.materials)}")
     m.use_nodes = True
     nt = m.node_tree
@@ -83,7 +83,7 @@ def _material(kind, colour):
     bsdf.inputs["Metallic"].default_value = (0.55 if kind == "steel" else 1.0) if metal else 0.0
     bsdf.inputs["Roughness"].default_value = {"chain": 0.45, "steel": 0.42, "gold": 0.3, "leather": 0.62, "leather_dark": 0.6, "cloth": 0.9}[kind]
     tex = {"chain": "chain", "steel": "steel", "gold": "steel", "leather": "leather", "leather_dark": "leather", "cloth": "cloth"}[kind]
-    scale = {"chain": 9.0, "steel": 2.0, "gold": 2.0, "leather": 3.0, "leather_dark": 3.0, "cloth": 10.0}[kind]
+    scale = tex_scale or {"chain": 9.0, "steel": 2.0, "gold": 2.0, "leather": 3.0, "leather_dark": 3.0, "cloth": 10.0}[kind]
     uv = nt.nodes.new("ShaderNodeTexCoord")
     mp = nt.nodes.new("ShaderNodeMapping")
     mp.inputs["Scale"].default_value = (scale, scale, scale)
@@ -343,16 +343,19 @@ def clean_weights(obj, rig, max_dist=0.3):
     removed = 0
     for v in obj.data.vertices:
         co = obj.matrix_world @ v.co
-        for g in list(v.groups):
-            seg = segs.get(names[g.group])
+        far = []   # collect first: removing while iterating v.groups reads freed memory
+        for g in v.groups:
+            seg = segs.get(names.get(g.group, ""))
             if seg is None or g.weight < 1e-4:
                 continue
             pt, t = intersect_point_line(co, seg[0], seg[1])
             t = max(0.0, min(1.0, t))
             d = (co - (seg[0] + (seg[1] - seg[0]) * t)).length
             if d > max_dist:
-                obj.vertex_groups[g.group].remove([v.index])
-                removed += 1
+                far.append(g.group)
+        for gi in far:
+            obj.vertex_groups[gi].remove([v.index])
+            removed += 1
     bpy.ops.object.select_all(action="DESELECT")
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
@@ -641,6 +644,7 @@ EMBLEMS = {
               (0.62, 0.62), (0.84, 0.78), (0.86, 0.90), (0.14, 0.90), (0.16, 0.78), (0.38, 0.62),
               (0.34, 0.44), (0.20, 0.42), (0.10, 0.36), (0.04, 0.30)],
     "sun": None,
+    "moon": "moon",   # drawn as a crescent with a star, see _paint_panel
 }
 
 
@@ -666,6 +670,23 @@ def _paint_panel(path, spec):
         d.rectangle([b + 6, 0, b + 9, h - b * 2 - 6], fill=t)
         d.rectangle([w - b - 9, 0, w - b - 6, h - b * 2 - 6], fill=t)
     em = EMBLEMS.get(spec.get("emblem", ""))
+    if em == "moon":
+        for cy, size in ((spec.get("emblem_y", 0.2), 0.8), (spec.get("emblem_y2", 0.72), 0.6)):
+            if cy is None:
+                continue
+            r = w * size / 2
+            cx, cyp = w / 2, cy * h
+            d.ellipse([cx - r, cyp - r, cx + r, cyp + r], fill=t)
+            d.ellipse([cx - r * 0.55, cyp - r * 1.05, cx + r * 1.25, cyp + r * 0.75], fill=c)   # bite out: crescent
+            sr = r * 0.42
+            sx, sy = cx + r * 0.25, cyp - r * 0.1
+            pts = []
+            for i in range(8):   # four-pointed star
+                a = i * math.pi / 4
+                rr = sr if i % 2 == 0 else sr * 0.25
+                pts.append((sx + math.sin(a) * rr, sy - math.cos(a) * rr))
+            d.polygon(pts, fill=t)
+        em = None
     if em:
         for cy, size in ((spec.get("emblem_y", 0.2), 0.82), (spec.get("emblem_y2", 0.72), 0.66)):
             if cy is None:
@@ -1237,6 +1258,9 @@ def build(hero_id, out_path=None):
                 if c.get("push"):  # lift a layer off the one beneath (boots over trousers)
                     for v in o.data.vertices:
                         v.co += v.normal * c["push"]
+                if c.get("material"):  # replace a dark texture with the project's cloth/leather look
+                    o.data.materials.clear()
+                    o.data.materials.append(_material(c["material"], tuple(c.get("color", (0.8, 0.78, 0.7))), c.get("tex_scale")))
                 if c.get("scale"):  # [width, depth, length] about its top-back-centre (a fuller beard)
                     sx, sy, sz = c["scale"]
                     xs = [v.co.x for v in o.data.vertices]

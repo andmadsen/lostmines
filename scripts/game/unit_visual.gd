@@ -50,6 +50,7 @@ var _slot_fix: Dictionary = {}   ## per bone: turns Mixamo-tuned grips onto othe
 var shield_slot: Node3D = null   ## forearm strap for shields (if the rig defines it)
 var shield_back: Node3D = null   ## where the shield hangs while the weapon is put away
 var _shield: Node3D = null
+var in_combat := false   ## fighting nearby (combat stance), even with a weapon that stays in hand
 var _grip: Dictionary = {}       ## belt: where one-handed weapons hang when sheathed
 var _sheath_slot: Node3D = null    ## back_slot or hip_slot for the current weapon
 var _main_sheathes := true         ## false for bows: they stay in hand
@@ -401,8 +402,39 @@ func _load_set(set_id: String) -> void:
 			src.free()
 		if n > 0:
 			anim_player.add_animation_library(key, lib)
+	if bool(aset.get("hold_left_arm", false)):
+		_hold_left_arm()
 	anim_player.stop()
 	_play("idle_calm" if not armed and anim_player.has_animation("idle_calm/idle_calm") else "idle", 0.0)
+
+
+## Staff users: the left arm keeps holding the staff as in the idle while the
+## right hand casts and attacks (animation set "hold_left_arm": true).
+func _hold_left_arm() -> void:
+	var src_name := "idle/idle" if anim_player.has_animation("idle/idle") else "idle_calm/idle_calm"
+	if not anim_player.has_animation(src_name):
+		return
+	var src := anim_player.get_animation(src_name)
+	var src_tracks := {}
+	for ti in src.get_track_count():
+		if src.track_get_type(ti) == Animation.TYPE_ROTATION_3D:
+			src_tracks[str(src.track_get_path(ti))] = ti
+	for full in anim_player.get_animation_list():
+		var key := str(full).get_slice("/", 0)
+		if not (key.begins_with("attack") or key.begins_with("cast")):
+			continue
+		var anim := anim_player.get_animation(full)
+		for ti in anim.get_track_count():
+			var path := str(anim.track_get_path(ti))
+			var bone := path.get_slice(":", 1)
+			if not bone.begins_with("mixamorig_Left") or not (bone.contains("Shoulder") or bone.contains("Arm") or bone.contains("Hand")):
+				continue
+			if anim.track_get_type(ti) != Animation.TYPE_ROTATION_3D or not src_tracks.has(path):
+				continue
+			var si: int = src_tracks[path]
+			for k in anim.track_get_key_count(ti):
+				var t := fmod(anim.track_get_key_time(ti, k), maxf(0.01, src.length))
+				anim.track_set_key_value(ti, k, src.rotation_track_interpolate(si, t))
 
 
 ## Removes the travel of the hips (the game moves the unit itself) but keeps
@@ -664,7 +696,7 @@ func _process(delta: float) -> void:
 				anim_player.speed_scale = 1.0
 			return
 		# weapon away: relaxed idle and walk (if the set has them)
-		var relaxed := not armed and anim_player.has_animation("idle_calm/idle_calm")
+		var relaxed := not in_combat and anim_player.has_animation("idle_calm/idle_calm")
 		if walk_amount > 0.3:
 			var w := "walk_calm" if relaxed and anim_player.has_animation("walk_calm/walk_calm") else "walk"
 			_play(w)
@@ -705,6 +737,7 @@ func _flicker() -> void:
 
 ## Draws the main weapon (to the hand) or sheathes it (on the back).
 func set_armed(v: bool) -> void:
+	in_combat = v   # bows and staffs never leave the hand, but the stance still relaxes
 	if not using_model or back_slot == null or v == armed:
 		armed = v if not using_model else armed
 		return

@@ -123,7 +123,15 @@
         "length": 1.7,
         "color": "#6a4a2a",
         "glow": "#a98bff",
-        "model": "res://assets/gear/staff_wizard2.glb"
+        "model": "res://assets/gear/staff_wizard2.glb",
+        "hand": "left",
+        "sheathe": false,
+        "rotation": [
+          0,
+          0,
+          -90
+        ],
+        "grip": 0.6
       }
     },
     {
@@ -163,7 +171,8 @@
         "metallic": 0.0,
         "roughness": 0.9,
         "outfits": [
-          "robe"
+          "robe",
+          "hood"
         ]
       }
     },
@@ -333,7 +342,7 @@
     },
     {
       "id": "zweihander",
-      "name": "Zweih\u00e4nder",
+      "name": "Zweihänder",
       "type": "weapon",
       "two_handed": true,
       "damage": "2d6",

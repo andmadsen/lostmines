@@ -696,6 +696,9 @@ func _update_arrows(delta: float) -> void:
 				continue
 			var s := float(DataDB.heroes.get(sh.data_id, {}).get("look", {}).get("scale", 1.0)) if not sh.is_monster else 0.8
 			var start := sh.global_position + Vector3(0, 1.35 * s, 0) + (tg.global_position - sh.global_position).normalized() * 0.4
+			var lk: Dictionary = a["look"]
+			if str(lk.get("kind", "arrow")) != "arrow" and sh.visual and sh.visual.using_model and sh.visual.hand_r:
+				start = sh.visual.hand_r.global_position   # spells leave the casting hand
 			var end := tg.global_position + Vector3(0, 1.0, 0)
 			if not bool(a["hit"]):
 				var side := (end - start).cross(Vector3.UP).normalized() * randf_range(-0.9, 0.9)

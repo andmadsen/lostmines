@@ -58,7 +58,7 @@ Target heights are for the finished hero in game.
 | Human | 1.65-1.85 m | by hero | 0.5-0.7 / 0.5 | 0.5-0.7 | 0.6-0.8 | 1.0 | Aurelia: 0.0 / 0.52, 0.68 / 0.52, 0.62, 0.7 |
 | Dwarf | 1.20-1.35 m | 1.0 / 0.75 | 0.9 / 0.85 | 0.0 | 0.1 | 0.92 | plus `targets`: upper/lower leg height decr 0.9/0.7, shoulder dist incr 0.7, torso horiz/depth incr 0.4, neck height decr 0.8, head-square 0.6, upperarm circ incr 0.6; generated beard. Keldrin: 1.37 m built, ~1.26 m in game |
 | Halfling | 0.95-1.05 m | by hero / 0.45 | 0.45 / 0.5 | 0.0 | 0.5 | 0.88 | adult face, just small (MakeHuman's lowest woman is 1.11 m). Pip: pointed ears (`ears/*-ear-shape-pointed` 0.9, `ear-scale-vert-incr` 0.4), `head-round` 0.4 |
-| High Elf | 1.70-1.85 m | by hero / 0.4 | 0.35 / 0.3 | 0.7 | 0.9 | 1.0 | slim, long neck; pointed ears (needs an ear asset) |
+| High Elf | 1.70-1.85 m | by hero / 0.42 | 0.35 / 0.32 | 0.75 | 0.9 | 1.12 | slim; pointed ears `ears/*-ear-shape-pointed` 1.0 + `ear-scale-vert-incr` 0.8, `neck/measure-neck-height-incr` 0.3. Shirvani ~1.73 m |
 | Goblin (monster) | ~0.9 m | - | - | - | - | per model | Sketchfab model, same animations |
 
 A dwarf is *not* a scaled-down human: get the stockiness from the macros
@@ -71,7 +71,7 @@ A dwarf is *not* a scaled-down human: get the stockiness from the macros
 | Aurelia (human fighter) | tall, steel chest, long sword, loose dark hair | steel grey, dark brown leather | warm bronze skin | `reference/Aurelia Dawnblade.png` |
 | Keldrin (dwarf cleric) | wide and low, huge red beard, pauldrons, long cream tabard | steel/bronze scale, dark leather | cream tabard with gold anvil of Moradin | `reference/Keldrin Ironfist.png` |
 | Pip (halfling rogue) | small, curly red-brown hair, green cape, quiver, bow | forest green cape, brown leather, linen | gold trim on the cape | `reference/Pip Swiftfoot.png` |
-| Shirvani (high elf wizard) | slim, long robe, blond braid, staff | white robe | gold trim | `reference/Shirvani Everglow.png` |
+| Shirvani (high elf wizard) | tall and slim, long white robe with draped hood, staff upright in the left hand | cream-white robe, blue stole | gold crescent and star | `reference/Shirvani Everglow.png` |
 
 No two heroes share a main colour. Gold is the "holy/arcane" accent (Keldrin,
 Shirvani); steel the martial one (Aurelia).
@@ -95,6 +95,8 @@ Shirvani); steel the martial one (Aurelia).
   and hang on the back when the weapon is put away.
 * Weapon sizes are real sizes (longsword ~1.0 m, mace ~0.6-0.7 m, greatsword
   ~1.4 m); the fitter scales the model to `length`.
+* Casters hold a staff upright in the left hand and cast with the right; the
+  left arm is held still during spells (see `CHARACTERS.md`, Staffs).
 * Helmets are **not drawn** for now (`data/settings.json`); they count in the
   rules. Design faces and hair to be seen.
 * Animations follow the weapon automatically (`animation_set: "auto"`); a hero
@@ -161,5 +163,7 @@ Test plans (`tests/shot.gd`): `gearclose` (close-up from four sides; `LM_HERO`,
 * Grounding from the body mesh alone: when boots hide the feet, the foot skin
   is a separate mesh - count it, or the hero sinks (Pip sank 9 cm).
 * A cream shirt reads as bare skin in torchlight: use a warmer linen colour.
+* A front panel with spring bones over a long skirt got pushed behind the legs
+  in wide stances: front panels hang without bones.
 * Hair with a near-black texture cannot be tinted; pick a light (blond/grey)
   hair and tint it.

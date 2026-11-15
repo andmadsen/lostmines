@@ -528,10 +528,16 @@
       "look": {
         "skin": "#efd2b8",
         "hair": "#e6e0c8",
-        "scale": 0.85,
-        "width": 0.92,
-        "model": "res://assets/characters/shirvani.fbx",
-        "animation_set": "caster_pack"
+        "scale": 1.12,
+        "model": "res://assets/characters/shirvani_mh.glb",
+        "animation_set": "caster_pack",
+        "tints": {
+          "hair": "#e8d39a"
+        },
+        "outfits_always": [
+          "boots",
+          "stole"
+        ]
       },
       "equipment": {
         "main_hand": "quarterstaff",
@@ -547,7 +553,98 @@
       "alignment": "Neutral",
       "age": 31,
       "bio": "Shirvani Everglow left the elven libraries of Evermeet to read the old Phandelver Pact where it was written, in the human halls of Candlekeep, until the scrolls were no longer enough. The Forge of Spells is said to lie somewhere beneath the Sword Mountains, and she means to see it with her own eyes. She is curious, impatient with fools, and quicker with a Fire Bolt than with an apology.",
-      "xp": 0
+      "xp": 0,
+      "body": {
+        "gender": 0.0,
+        "age": 0.42,
+        "muscle": 0.35,
+        "weight": 0.32,
+        "height": 0.75,
+        "proportions": 0.9,
+        "cupsize": 0.4,
+        "firmness": 0.6,
+        "race": {
+          "african": 0.0,
+          "asian": 0.05,
+          "caucasian": 0.95
+        },
+        "targets": {
+          "ears/l-ear-shape-pointed": 1.0,
+          "ears/r-ear-shape-pointed": 1.0,
+          "ears/l-ear-scale-vert-incr": 0.8,
+          "ears/r-ear-scale-vert-incr": 0.8,
+          "neck/measure-neck-height-incr": 0.3
+        },
+        "skin": "toigo_light_skin_with_natural_makeup",
+        "eyes": "low-poly",
+        "eyebrows": "mindfront_eyebrows_05",
+        "eyelashes": "mindfront_eyelashes_01",
+        "teeth": "teeth_base",
+        "tongue": "tongue01",
+        "hair": "elvs_keylth_hair",
+        "clothes": [
+          {
+            "id": "boots",
+            "asset": "scailman_low-heeled_boots"
+          },
+          {
+            "id": "robe",
+            "asset": "donitz_monk_robe",
+            "material": "cloth",
+            "color": [
+              0.86,
+              0.82,
+              0.7
+            ],
+            "tex_scale": 40,
+            "push": 0.008
+          },
+          {
+            "id": "hood",
+            "asset": "donitz_monk_robe_hood_down",
+            "material": "cloth",
+            "color": [
+              0.84,
+              0.8,
+              0.68
+            ],
+            "push": 0.012,
+            "tex_scale": 40
+          }
+        ],
+        "outfits": [
+          "under_top"
+        ],
+        "panels": [
+          {
+            "id": "stole",
+            "sides": [
+              "front"
+            ],
+            "top": 0.3,
+            "bottom": -0.6,
+            "belt": 0.0,
+            "width_top": 0.16,
+            "width_bottom": 0.17,
+            "gap": 0.012,
+            "color": [
+              0.16,
+              0.2,
+              0.45
+            ],
+            "trim": [
+              0.72,
+              0.56,
+              0.2
+            ],
+            "border": 0.08,
+            "emblem": "moon",
+            "emblem_y": 0.45,
+            "emblem_y2": null,
+            "legs": 0.5
+          }
+        ]
+      }
     }
   ]
 }

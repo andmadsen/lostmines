@@ -57,7 +57,7 @@ It reads `heroes.json -> heroes[aurelia].body` and writes
 | `skin` | a skin from the skins packs, e.g. `toigo_light_skin_female_bronze` |
 | `eyes, eyebrows, eyelashes, teeth, tongue, hair` | MakeHuman asset names, e.g. `low-poly`, `elvs_daisy_hair` |
 | `targets` | extra MakeHuman body targets with weights, e.g. `{"legs/measure-upperleg-height-decr": 0.9}` (files in MPFB `data/targets/<group>/`). Keldrin uses them for short legs, broad shoulders, short neck, square head |
-| `clothes` | list of `{"id": "<outfit name>", "asset": "<mhclo name>", "push": metres, "scale": [w, d, l]}`; `push` lifts a layer off the one beneath (e.g. boots over trousers, 0.004); `scale` enlarges a piece about its top-back-centre (moustache) |
+| `clothes` | list of `{"id": "<outfit name>", "asset": "<mhclo name>", "push": metres, "scale": [w, d, l], "material": "cloth", "color": [r,g,b], "tex_scale": 40}`; `push` lifts a layer off the one beneath (e.g. boots over trousers, 0.004); `scale` enlarges a piece about its top-back-centre (moustache); `material` + `color` replace a dark texture with the project's cloth/leather look (a dark texture cannot be tinted light - Shirvani's white robe), `tex_scale` sets how fine the weave is |
 | `panels` | generated cloth panels (tabards), section 3b |
 | `beards` | generated full beards with braids, section 3c |
 | `outfits` | generated cloth layers (`under_top`, `under_legs`, `boots`, `gloves`, `leather`, `chain`) - fallback only |
@@ -126,7 +126,8 @@ A grid is laid over the front (and back: `outfit_<id>_back`) of the dressed body
 way from Spine2 to the neck, `bottom` a share from the knee up to the hips.
 Above the belt it follows the chest; below it hangs straight and follows the
 hips plus a share (`legs`, 0.35) of both thighs. It is painted with `color`, a
-`trim` border and an `emblem` (`anvil`; add more outlines in `EMBLEMS`).
+`trim` border and an `emblem` (`anvil`, `moon` = crescent and star; add more in `EMBLEMS`).
+`"sides": ["front"]` makes a front-only panel (Shirvani's stole).
 
 Capes use the same generator with `"sides": ["back"]` and a shaped top:
 `neck_width` (width at the neck), `shoulder_drop` (how far down the shoulders
@@ -232,6 +233,22 @@ override a slot for one hero.
   (drawn) and the same with `LM_SHEATHED=1` (on the back).
 
 Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
+
+### Staffs and spellcasting
+
+A staff is held upright in the LEFT hand and never put away (`quarterstaff`:
+`"hand": "left", "sheathe": false, "rotation": [0, 0, -90], "grip": 0.6`), so
+the right hand is free to cast - like the reference art. The `caster_pack` set:
+
+* idle/walk are the calm, upright unarmed ones (the pack's own idle is a wide
+  battle stance that swings the staff out like a spear);
+* `"hold_left_arm": true` copies the left arm (shoulder to fingers) from the
+  idle into every attack and cast animation: the staff stays upright at her
+  side while the body turns and the right hand throws the spell;
+* spell projectiles (Fire Bolt) leave from the right hand.
+
+Bows and staffs stay in hand, but the stance still relaxes out of combat
+(`in_combat` in `unit_visual.gd`).
 
 ## 6. Animations
 

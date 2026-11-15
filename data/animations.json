@@ -418,8 +418,8 @@
     },
     {
       "id": "caster_pack",
-      "idle": "res://assets/animations/spell_pack/standing idle.fbx",
-      "walk": "res://assets/animations/spell_pack/Standing Walk Forward.fbx",
+      "idle": "res://assets/animations/onehand/unarmed idle.fbx",
+      "walk": "res://assets/animations/onehand/unarmed walk forward.fbx",
       "attack": [
         "res://assets/animations/spell_pack/Standing 1H Magic Attack 01.fbx",
         "res://assets/animations/spell_pack/Standing 1H Magic Attack 02.fbx"
@@ -504,7 +504,8 @@
           ],
           "spin": 180
         }
-      }
+      },
+      "hold_left_arm": true
     }
   ],
   "auto": {
