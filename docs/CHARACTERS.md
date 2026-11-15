@@ -138,9 +138,24 @@ looser over the back), `flare` (metres the hem falls away from the body),
 
     {"id": "cape", "sides": ["back"], "top": 0.95, "bottom": -0.35,
      "neck_width": 0.14, "shoulder_drop": 0.09, "width_top": 0.34, "width_bottom": 0.44,
-     "belt": 0.42, "gap": 0.025, "flare": 0.07,
+     "belt": 0.42, "gap": 0.02, "bones": {"chains": 5, "segments": 4},
      "columns": 31, "folds": 6, "fold_depth": 0.04, "legs": 0.25,
      "color": [0.22, 0.31, 0.15], "trim": [0.62, 0.47, 0.17], "border": 0.05}
+
+**Hanging cloth that moves (spring bones).** A rigidly weighted cape tips with
+the hips and stands off the back like a board. Give the panel bones:
+
+    "bones": {"chains": 5, "segments": 4, "parent": "Spine2"}
+
+The builder adds chains of bones `<id>_<chain>_<segment>` down the hanging part
+(below `belt`) and weights the cloth to them. In game `look.springs` simulates
+them with gravity (Godot's SpringBoneSimulator3D), with capsules around hips,
+lower back and legs so the cloth stays out of the body:
+
+    "springs": [{"bones": "cape", "stiffness": 0.6, "drag": 0.5, "gravity": 1.5, "radius": 0.02}]
+
+Less `stiffness` = looser; more `drag` = calmer. Use no `flare` with bones -
+gravity decides how it falls. The same works for robes, tabard tails or hair.
 
 ## 3c. Beards
 

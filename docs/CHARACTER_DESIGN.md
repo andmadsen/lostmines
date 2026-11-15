@@ -151,6 +151,8 @@ Test plans (`tests/shot.gd`): `gearclose` (close-up from four sides; `LM_HERO`,
   metres up. Compare foot *lift* above rest instead.
 * JPEG textures in the export: Godot failed to import them; export with `AUTO`.
 * Near-black clothing textures: invisible in the cave.
+* Capes weighted rigidly to hips and thighs stand off the back like a board
+  in animation; hanging cloth gets spring bones (gravity) instead.
 * Leg-length targets lift the feet off the floor: the builder grounds the
   figure; check `LM_FEET=1` (0-4 cm).
 * Direction-aligning the spine/neck between rigs: a dwarf's chest tipped

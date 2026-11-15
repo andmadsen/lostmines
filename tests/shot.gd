@@ -404,7 +404,7 @@ func _process(_d: float) -> void:
 			print("sword world aabb ", aabb.size, " hand at ", a.visual.hand_r.global_position, " unit at ", a.global_position)
 			get_tree().quit()
 	elif plan == "walkseq":
-		var a: Unit = scene.party[0]
+		var a: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 0]
 		if frame == 2 and OS.get_environment("LM_MODEL") != "":
 			var lk: Dictionary = DataDB.heroes[a.data_id]["look"].duplicate()
 			lk["model"] = OS.get_environment("LM_MODEL")
@@ -418,7 +418,7 @@ func _process(_d: float) -> void:
 			scene.rig.pitch = deg_to_rad(-8.0)
 			a.order_move(a.global_position + Vector3(-12, 0, 0))
 		if frame > 5:
-			scene.rig.focus(a.global_position + Vector3(0, 0.9, 0))
+			scene.rig.focus(a.global_position + Vector3(0, float(OS.get_environment("LM_FOCUSY")) if OS.get_environment("LM_FOCUSY") != "" else 0.9, 0))
 			scene.rig.yaw = PI * 0.0
 		for i in 4:
 			if frame == 40 + i * 6:

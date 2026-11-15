@@ -13,6 +13,7 @@ import os
 import sys
 
 import bpy  # noqa: E402  (must come before addon_utils)
+import mathutils  # noqa: E402
 import addon_utils
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -813,8 +814,15 @@ def make_panel(body, spec, root):
             groups[bone].add([i], wgt, "ADD")
         legs = spec.get("legs", 0.35)
         chain = [("Hips", sp["Hips"]), ("Spine", sp["Spine"]), ("Spine1", sp["Spine1"]), ("Spine2", sp["Spine2"])]
+        springs = _cape_bones(rig, spec, grid, zs, belt, side * gap) if spec.get("bones") else None
         for v in ob.data.vertices:
             z = v.co.z
+            if springs and z < springs["z0"]:   # the hanging part moves with its own (simulated) bones
+                for bone, w in _spring_weights(springs, v.co.x, z):
+                    if bone not in groups:
+                        groups[bone] = ob.vertex_groups.new(name=bone)
+                    groups[bone].add([v.index], w, "ADD")
+                continue
             if z < belt:
                 k = min(1.0, (belt - z) / max(0.01, belt - bottom)) * legs
                 add("Hips", v.index, 1.0 - k)
@@ -835,6 +843,58 @@ def make_panel(body, spec, root):
         made.append(ob)
         print("  panel:", name, len(ob.data.vertices), "verts")
     return made
+
+
+def _cape_bones(rig, spec, grid, zs, belt, dy):
+    """Adds chains of bones down the hanging part of a cape (named
+    <id>_<chain>_<segment>, parented to Spine2) for the game's spring-bone
+    simulation, so the cloth hangs with gravity and swings."""
+    cfg = spec["bones"]
+    nch, nseg = cfg.get("chains", 5), cfg.get("segments", 4)
+    rows, cols = len(grid), len(grid[0])
+    r0 = next((r for r in range(rows) if zs[r] < belt), rows - 2)
+    cols_at = [round(j * (cols - 1) / (nch - 1)) for j in range(nch)]
+    joint_rows = [round(r0 + (rows - 1 - r0) * k / nseg) for k in range(nseg + 1)]
+    inv = rig.matrix_world.inverted()
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = rig
+    rig.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    ebs = rig.data.edit_bones
+    parent = ebs.get(B + cfg.get("parent", "Spine2"))
+    xs = []
+    for j, c in enumerate(cols_at):
+        prev = parent
+        xs.append(grid[r0][c][0])
+        for k in range(nseg):
+            a = grid[joint_rows[k]][c]
+            b = grid[joint_rows[k + 1]][c]
+            bone = ebs.new(f"{spec['id']}_{j}_{k}")
+            bone.head = inv @ mathutils.Vector((a[0], a[1] + dy, a[2]))
+            bone.tail = inv @ mathutils.Vector((b[0], b[1] + dy, b[2]))
+            bone.parent = prev
+            bone.use_connect = k > 0
+            bone.use_deform = True
+            prev = bone
+    bpy.ops.object.mode_set(mode="OBJECT")
+    return {"id": spec["id"], "xs": xs, "z_joints": [zs[r] for r in joint_rows], "z0": zs[r0] + 0.0005, "nseg": nseg}
+
+
+def _spring_weights(sp, x, z):
+    """Weights of a cape vertex: the segment it hangs in, shared between
+    the two nearest chains across the width."""
+    zj = sp["z_joints"]
+    k = 0
+    while k < sp["nseg"] - 1 and z < zj[k + 1]:
+        k += 1
+    xs = sp["xs"]
+    if x <= xs[0]:
+        return [(f"{sp['id']}_0_{k}", 1.0)]
+    if x >= xs[-1]:
+        return [(f"{sp['id']}_{len(xs) - 1}_{k}", 1.0)]
+    j = max(i for i in range(len(xs) - 1) if xs[i] <= x)
+    t = (x - xs[j]) / max(1e-6, xs[j + 1] - xs[j])
+    return [(f"{sp['id']}_{j}_{k}", 1 - t), (f"{sp['id']}_{j + 1}_{k}", t)]
 
 
 # ---------------------------------------------------------------- beards

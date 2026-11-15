@@ -149,6 +149,8 @@ func _build_model(path: String) -> void:
 		model.add_child(anim_player)
 	_skel = skel
 	_model_path = path
+	for sp in look.get("springs", []):
+		_add_springs(skel, sp)
 	if set_id == "auto":
 		set_id = str(DataDB.animation_auto.get("one_hand", ""))
 		aset = DataDB.animation_sets.get(set_id, {})
@@ -166,6 +168,62 @@ func _build_model(path: String) -> void:
 	head_slot = _bone_slot(skel, "mixamorig_Head", grip.get("head", {}))
 	extras = Node3D.new()
 	body.add_child(extras)
+
+
+## Cloth that hangs and swings (capes): bone chains <prefix>_<chain>_<segment>
+## made by tools/build_hero.py, simulated with gravity; capsules around the
+## hips, back and legs keep the cloth out of the body.
+## look.springs = [{"bones": "cape", "stiffness": 0.6, "drag": 0.5, "gravity": 1.5, "radius": 0.02}]
+func _add_springs(skel: Skeleton3D, sp: Dictionary) -> void:
+	if skel == null:
+		return
+	var prefix := str(sp.get("bones", "cape"))
+	var sim := SpringBoneSimulator3D.new()
+	sim.name = "Springs_" + prefix
+	var chains: Array = []
+	var j := 0
+	while skel.find_bone("%s_%d_0" % [prefix, j]) >= 0:
+		var k := 0
+		while skel.find_bone("%s_%d_%d" % [prefix, j, k + 1]) >= 0:
+			k += 1
+		chains.append([j, k])
+		j += 1
+	if chains.is_empty():
+		return
+	skel.add_child(sim)
+	sim.setting_count = chains.size()
+	for i in chains.size():
+		var c: Array = chains[i]
+		var end := "%s_%d_%d" % [prefix, c[0], c[1]]
+		sim.set_root_bone_name(i, "%s_%d_0" % [prefix, c[0]])
+		sim.set_end_bone_name(i, end)
+		sim.set_extend_end_bone(i, true)
+		sim.set_end_bone_length(i, skel.get_bone_rest(skel.find_bone(end)).origin.length() * 0.0 + 0.05)
+		sim.set_stiffness(i, float(sp.get("stiffness", 0.6)))
+		sim.set_drag(i, float(sp.get("drag", 0.5)))
+		sim.set_gravity(i, float(sp.get("gravity", 1.5)))
+		sim.set_radius(i, float(sp.get("radius", 0.02)))
+		sim.set_enable_all_child_collisions(i, true)
+	# the body the cloth must not pass through
+	var hips_w := 0.17
+	for b in [["mixamorig_Hips", hips_w, 0.36, true], ["mixamorig_Spine", 0.15, 0.34, true],
+			["mixamorig_LeftUpLeg", 0.085, 0.0, false], ["mixamorig_RightUpLeg", 0.085, 0.0, false],
+			["mixamorig_LeftLeg", 0.065, 0.0, false], ["mixamorig_RightLeg", 0.065, 0.0, false]]:
+		var bi := skel.find_bone(str(b[0]))
+		if bi < 0:
+			continue
+		var cap := SpringBoneCollisionCapsule3D.new()
+		cap.set_bone_name(str(b[0]))
+		cap.set_radius(float(b[1]))
+		if bool(b[3]):   # across the body
+			cap.set_height(float(b[2]))
+			cap.set_rotation_offset(Quaternion(Vector3.FORWARD, PI / 2))
+		else:            # along the limb, from this joint to the next
+			var kids := skel.get_bone_children(bi)
+			var length := skel.get_bone_rest(kids[0]).origin.length() if kids.size() > 0 else 0.4
+			cap.set_height(length + float(b[1]) * 2.0)
+			cap.set_position_offset(Vector3(0, length * 0.5, 0))
+		sim.add_child(cap)
 
 
 static var _skel_cache: Dictionary = {}
