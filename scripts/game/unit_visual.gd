@@ -39,7 +39,9 @@ var _attack_len := 1.0
 var back_slot: Node3D = null      ## where the main weapon rests when sheathed
 var _main_weapon: Node3D = null
 var _main_slot: Node3D = null      ## the hand the main weapon is held in
-var hip_slot: Node3D = null       ## belt: where one-handed weapons hang when sheathed
+var hip_slot: Node3D = null
+var _slot_fix: Dictionary = {}   ## per bone: turns Mixamo-tuned grips onto other rigs
+var shield_slot: Node3D = null   ## forearm strap for shields (if the rig defines it)       ## belt: where one-handed weapons hang when sheathed
 var _sheath_slot: Node3D = null    ## back_slot or hip_slot for the current weapon
 var _main_sheathes := true         ## false for bows: they stay in hand
 var attack_speed := 1.4
@@ -148,6 +150,9 @@ func _build_model(path: String) -> void:
 				var anim: Animation = sap.get_animation(sap.get_animation_list()[0]).duplicate()
 				var src_skel: Skeleton3D = src.find_child("Skeleton3D", true, false)
 				if skel and src_skel and Retarget.needed(src_skel, skel):
+					if _slot_fix.is_empty():
+						for bn in ["mixamorig_RightHand", "mixamorig_LeftHand", "mixamorig_LeftForeArm", "mixamorig_Spine2", "mixamorig_Hips", "mixamorig_Head"]:
+							_slot_fix[bn] = Retarget.slot_correction(src_skel, skel, bn)
 					anim = Retarget.convert(anim, src_skel, skel, skel_path, "%s|%s" % [path, p]).duplicate()
 				elif skel_path != "Skeleton3D":
 					for ti in anim.get_track_count():
@@ -165,10 +170,12 @@ func _build_model(path: String) -> void:
 				anim_player.add_animation_library(key, lib)
 			src.free()
 		_play("idle", 0.0)
-	var grip: Dictionary = aset.get("grip", {})
+	var grip: Dictionary = aset.get("grip", {}).duplicate()
+	grip.merge(look.get("grip", {}), true)   # per-model fine tuning (bone axes differ between rigs)
 	hand_r = _bone_slot(skel, "mixamorig_RightHand", grip.get("right", {}))
 	back_slot = _bone_slot(skel, "mixamorig_Spine2", grip.get("back", {"position": [0.0, 0.12, -0.17], "rotation": [0, 0, 200]}))
-	hip_slot = _bone_slot(skel, "mixamorig_Hips", grip.get("hip", {"position": [-0.2, 0.02, 0.0], "rotation": [0, 0, -12]}))
+	hip_slot = _bone_slot(skel, "mixamorig_Hips", grip.get("hip", {"position": [0.19, 0.06, 0.05], "rotation": [35, 0, 180]}))
+	shield_slot = _bone_slot(skel, "mixamorig_LeftForeArm", grip.get("shield", {"position": [0.0, 0.14, -0.07], "rotation": [0, 0, 0]})) if grip.has("shield") else null
 	armed = false
 	hand_l = _bone_slot(skel, "mixamorig_LeftHand", grip.get("left", {}))
 	head_slot = _bone_slot(skel, "mixamorig_Head", grip.get("head", {}))
@@ -269,6 +276,9 @@ func _bone_slot(skel: Skeleton3D, bone: String, g: Dictionary) -> Node3D:
 	var r: Array = g.get("rotation", [0, 0, 0])
 	slot.position = Vector3(p[0], p[1], p[2])
 	slot.rotation_degrees = Vector3(r[0], r[1], r[2])
+	if _slot_fix.has(bone):
+		var c: Basis = _slot_fix[bone]
+		slot.transform = Transform3D(c, Vector3.ZERO) * slot.transform
 	ba.add_child(slot)
 	return slot
 
@@ -291,6 +301,8 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 		_clear(back_slot)
 	if hip_slot:
 		_clear(hip_slot)
+	if shield_slot:
+		_clear(shield_slot)
 	_main_weapon = null
 	held_light = null
 	if using_model:
@@ -333,7 +345,7 @@ func _attach_items(equipment: Dictionary) -> void:
 		var mv: Dictionary = main.get("visual", {})
 		_main_weapon = weapon_mesh(mv)
 		_main_slot = hand_l if str(mv.get("hand", "right")) == "left" else hand_r
-		var sh = mv.get("sheathe", true)
+		var sh = mv.get("sheathe", "hip" if not bool(main.get("two_handed", false)) and not bool(main.get("ranged", false)) else true)
 		_sheath_slot = hip_slot if str(sh) == "hip" else back_slot
 		_main_sheathes = (str(sh) == "hip" or (sh is bool and sh)) and _sheath_slot != null
 		if using_model and _main_sheathes and not armed:
@@ -345,7 +357,12 @@ func _attach_items(equipment: Dictionary) -> void:
 		if str(off.get("type", "")) == "light":
 			hand_l.add_child(torch_mesh(off.get("visual", {})))
 		else:
-			hand_l.add_child(shield_mesh(off.get("visual", {})))
+			if shield_slot:
+				var sm := shield_mesh(off.get("visual", {}))
+				sm.transform = Transform3D.IDENTITY
+				shield_slot.add_child(sm)
+			else:
+				hand_l.add_child(shield_mesh(off.get("visual", {})))
 	var helm := DataDB.item(str(equipment.get("head", "")))
 	if hair:
 		hair.visible = helm.is_empty()

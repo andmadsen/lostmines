@@ -68,6 +68,11 @@ func _process(_d: float) -> void:
 	elif plan == "gearclose":
 		var k: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 2]
 		if frame == 5:
+			if OS.get_environment("LM_EQUIP") != "":
+				for kv in OS.get_environment("LM_EQUIP").split(","):
+					var p2 := kv.split(":")
+					k.equipment[p2[0]] = p2[1]
+				k.visual.apply_equipment(k.equipment)
 			if OS.get_environment("LM_SHEATHED") == "":
 				k.visual.set_armed(true)
 				k._calm = -999.0

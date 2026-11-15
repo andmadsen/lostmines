@@ -110,6 +110,19 @@ Downloaded models are fitted at run time from the item's `visual`:
 * helmets: `model`, `size` (width in m), `offset`, `rotation` (turn until the
   visor faces forward: try 0, 90, -90), `brightness`, `metallic`.
 
+Where gear sits: grips in `animations.json` (`right`, `left`, `back`, `hip`,
+`head`) are tuned on Mixamo models. On MakeHuman heroes (other bone axes,
+A-pose) `Retarget.slot_correction` turns each slot so the item sits exactly as
+it would on the Mixamo model - no separate tuning needed. `look.grip` can still
+override a slot for one hero.
+
+* One-handed melee weapons hang at the LEFT hip by default (drawn with the right
+  hand); two-handed weapons go on the back; bows/crossbows stay in hand
+  (`sheathe` overrides: `true` = back, `"hip"`, `false`).
+* Shields are held in the left hand, face outward along the forearm; use
+  `rotation` (e.g. `[90,0,0]`) and `flip` per shield until the point is down
+  and the painted side faces out.
+
 Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 
 ## 6. Getting assets

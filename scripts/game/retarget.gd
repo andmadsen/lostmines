@@ -24,6 +24,26 @@ static func needed(src: Skeleton3D, dst: Skeleton3D) -> bool:
 	return false
 
 
+## How an item held by a bone of `src` must be turned to sit the same way on
+## the matching bone of `dst` (grips are tuned on Mixamo models; MakeHuman
+## bones have other axes and an A-pose rest). Returns a rotation (Basis).
+static func slot_correction(src: Skeleton3D, dst: Skeleton3D, bone: String) -> Basis:
+	var si := src.find_bone(bone)
+	var di := dst.find_bone(bone)
+	if si < 0 or di < 0:
+		return Basis.IDENTITY
+	var pairs: Array = []
+	for b in src.get_bone_count():
+		var d := dst.find_bone(src.get_bone_name(b))
+		if d >= 0:
+			pairs.append([b, d])
+	var align := _alignment(src, dst, pairs)
+	var gs := src.get_bone_global_rest(si).basis.get_rotation_quaternion()
+	var gt := dst.get_bone_global_rest(di).basis.get_rotation_quaternion()
+	var a: Quaternion = align.get(di, Quaternion.IDENTITY)
+	return Basis(gt.inverse() * a.inverse() * gs)
+
+
 ## Returns a copy of `anim` (tracks addressed as "<anything>:<bone>" on
 ## `src`) rebuilt for `dst`, with track paths "<dst_path>:<bone>".
 static func convert(anim: Animation, src: Skeleton3D, dst: Skeleton3D, dst_path: String, key: String) -> Animation:

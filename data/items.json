@@ -11,7 +11,6 @@
         "mesh": "sword",
         "length": 1.0,
         "color": "#c8ccd2",
-        "sheathe": "hip",
         "model": "res://assets/gear/sword_chevalier.glb",
         "brightness": 1.1,
         "metallic": 0.5
@@ -28,7 +27,6 @@
         "mesh": "axe",
         "length": 0.8,
         "color": "#9aa0a8",
-        "sheathe": "hip",
         "model": "res://assets/gear/axe_viking.glb",
         "flip": true,
         "grip": 0.15
@@ -62,7 +60,6 @@
         "mesh": "sword",
         "length": 0.78,
         "color": "#d0d4da",
-        "sheathe": "hip",
         "model": "res://assets/gear/sword_short.glb",
         "brightness": 1.1,
         "metallic": 0.5
@@ -79,7 +76,6 @@
         "mesh": "sword",
         "length": 0.36,
         "color": "#d0d4da",
-        "sheathe": "hip",
         "model": "res://assets/gear/dagger.glb"
       }
     },
@@ -94,7 +90,6 @@
         "mesh": "sword",
         "length": 0.85,
         "color": "#8a8478",
-        "sheathe": "hip",
         "model": "res://assets/gear/scimitar.glb"
       }
     },
@@ -113,8 +108,7 @@
         "brightness": 1.1,
         "metallic": 0.5,
         "mesh": "mace",
-        "color": "#a8a8a8",
-        "sheathe": true
+        "color": "#a8a8a8"
       }
     },
     {
@@ -319,7 +313,6 @@
         "length": 1.9,
         "flip": true,
         "grip": 0.15,
-        "sheathe": "hip",
         "mesh": "mace",
         "color": "#7a6a5a"
       }
@@ -335,8 +328,7 @@
         "model": "res://assets/gear/warhammer.glb",
         "length": 0.8,
         "flip": true,
-        "grip": 0.15,
-        "sheathe": true
+        "grip": 0.15
       }
     },
     {
@@ -380,8 +372,7 @@
       "reach": 1.6,
       "visual": {
         "model": "res://assets/gear/falcata.glb",
-        "length": 0.75,
-        "sheathe": "hip"
+        "length": 0.75
       }
     },
     {
@@ -397,7 +388,12 @@
           0,
           0
         ],
-        "flip": true
+        "flip": false,
+        "rotation": [
+          90,
+          0,
+          0
+        ]
       }
     },
     {
@@ -429,7 +425,12 @@
           0,
           0
         ],
-        "flip": true
+        "flip": true,
+        "rotation": [
+          -90,
+          0,
+          0
+        ]
       }
     },
     {
