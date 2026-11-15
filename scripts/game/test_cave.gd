@@ -29,7 +29,7 @@ const HERO_IDS: Array[String] = ["aurelia", "pip", "keldrin", "shirvani"]
 const HERO_START: Array[Vector2i] = [Vector2i(11, 14), Vector2i(10, 15), Vector2i(12, 15), Vector2i(11, 16)]
 const GOBLINS: Array[Vector2i] = [Vector2i(11, 3), Vector2i(8, 4), Vector2i(14, 5)]
 
-var cave: CaveBuilder
+var cave   ## the world: CaveBuilder or TerrainBuilder (is_floor, cell_center, world_to_cell, w, h, tile)
 var rig: CameraRig
 var hud: Hud
 var units: Array[Unit] = []
@@ -49,30 +49,27 @@ var targeting: Dictionary = {}   ## waiting for a target click: {"kind", "spell"
 
 func _ready() -> void:
 	_setup_environment()
-	cave = CaveBuilder.new()
-	add_child(cave)
-	cave.build(LAYOUT)
+	_build_world()
 	_setup_astar()
 
 	rig = CameraRig.new()
 	add_child(rig)
-	rig.bounds = Rect2(0, 0, cave.w * CaveBuilder.TILE, cave.h * CaveBuilder.TILE)
+	rig.bounds = Rect2(0, 0, cave.w * cave.tile, cave.h * cave.tile)
 
+	var starts := _hero_starts()
 	for i in HERO_IDS.size():
-		var u := _spawn_unit(cave.cell_center(HERO_START[i]))
+		var u := _spawn_unit(starts[i])
 		u.setup_hero(HERO_IDS[i])
-		u.rotation.y = 0.0
-		var lamp := OmniLight3D.new()
-		lamp.position = Vector3(0.3, 2.3, 0)
-		lamp.light_color = Color(1.0, 0.88, 0.75)
-		lamp.light_energy = 0.35
-		lamp.omni_range = 4.0   # faint fill light; the real light comes from held torches
-		u.add_child(lamp)
+		u.rotation.y = _hero_facing()
+		if _hero_lamps():
+			var lamp := OmniLight3D.new()
+			lamp.position = Vector3(0.3, 2.3, 0)
+			lamp.light_color = Color(1.0, 0.88, 0.75)
+			lamp.light_energy = 0.35
+			lamp.omni_range = 4.0   # faint fill light; the real light comes from held torches
+			u.add_child(lamp)
 		party.append(u)
-	for c in GOBLINS:
-		var g := _spawn_unit(cave.cell_center(c))
-		g.setup_monster("goblin")
-		g.rotation.y = PI
+	_spawn_monsters()
 
 	hud = Hud.new()
 	hud.game = self
@@ -83,17 +80,58 @@ func _ready() -> void:
 	selection = party.duplicate()
 	for u in party:
 		u.set_selected(true)
-	rig.focus(party[0].global_position + Vector3(0, 0, -3))
+	rig.focus(party[0].global_position + _camera_start_offset())
+	_intro()
 
+
+# ---------------- the parts a level can replace ----------------
+func _build_world() -> void:
+	cave = CaveBuilder.new()
+	add_child(cave)
+	cave.build(LAYOUT)
+
+
+func _hero_starts() -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	for c in HERO_START:
+		out.append(cave.cell_center(c))
+	return out
+
+
+func _hero_facing() -> float:
+	return 0.0
+
+
+func _hero_lamps() -> bool:
+	return true
+
+
+func _camera_start_offset() -> Vector3:
+	return Vector3(0, 0, -3)
+
+
+func _spawn_monsters() -> void:
+	for c in GOBLINS:
+		var g := _spawn_unit(cave.cell_center(c))
+		g.setup_monster("goblin")
+		g.rotation.y = PI
+
+
+func _intro() -> void:
 	log_line("[i]The passage reeks of smoke and wet fur. Somewhere ahead, something laughs in a high, nasty voice.[/i]")
 	log_line("[color=#9fd3ff]Press H for controls. Space pauses the game.[/color]")
+
+
+## Height of the ground at a point (flat in caves).
+func ground_y(p: Vector3) -> float:
+	return cave.height_at(p.x, p.z) if cave.has_method("height_at") else 0.0
 
 
 func _spawn_unit(pos: Vector3) -> Unit:
 	var u := Unit.new()
 	u.game = self
 	add_child(u)
-	u.global_position = pos
+	u.global_position = Vector3(pos.x, ground_y(pos), pos.z)
 	units.append(u)
 	return u
 
@@ -126,8 +164,8 @@ func _setup_environment() -> void:
 
 func _setup_astar() -> void:
 	astar.region = Rect2i(0, 0, cave.w, cave.h)
-	astar.cell_size = Vector2(CaveBuilder.TILE, CaveBuilder.TILE)
-	astar.offset = Vector2(CaveBuilder.TILE / 2.0, CaveBuilder.TILE / 2.0)
+	astar.cell_size = Vector2(cave.tile, cave.tile)
+	astar.offset = Vector2(cave.tile / 2.0, cave.tile / 2.0)
 	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	astar.update()
 	for y in cave.h:
@@ -165,9 +203,9 @@ func _separate() -> void:
 
 func _try_nudge(u: Unit, v: Vector2) -> void:
 	var p := u.global_position + Vector3(v.x, 0, v.y)
-	var c := cave.world_to_cell(p)
+	var c: Vector2i = cave.world_to_cell(p)
 	if cave.is_floor(c.x, c.y):
-		u.global_position = p
+		u.global_position = Vector3(p.x, ground_y(p), p.z)
 
 
 # ---------------- input ----------------
@@ -260,7 +298,7 @@ func _move_selection(dest: Vector3) -> void:
 		var o: Vector2 = offsets[i % offsets.size()] if movers.size() > 1 else Vector2.ZERO
 		var r := o.rotated(-ang)
 		var t := dest + Vector3(r.x, 0, r.y)
-		var c := cave.world_to_cell(t)
+		var c: Vector2i = cave.world_to_cell(t)
 		if not cave.is_floor(c.x, c.y):
 			t = dest
 		movers[i].order_move(t)
@@ -328,7 +366,13 @@ func _unit_at(pos: Vector2) -> Unit:
 func _ground_at(pos: Vector2):
 	var from := rig.camera.project_ray_origin(pos)
 	var dir := rig.camera.project_ray_normal(pos)
-	return Plane(Vector3.UP, 0.0).intersects_ray(from, dir)
+	# hills: intersect the plane at the ground height and refine a few times
+	var hit = Plane(Vector3.UP, 0.0).intersects_ray(from, dir)
+	for i in 4:
+		if hit == null:
+			return null
+		hit = Plane(Vector3.UP, ground_y(hit)).intersects_ray(from, dir)
+	return hit
 
 
 func _update_hover(pos: Vector2) -> void:
@@ -581,9 +625,9 @@ func cmd_toggle(slot: String, type: String) -> void:
 # ---------------- services used by units ----------------
 func find_path(from: Vector3, to: Vector3) -> Array[Vector3]:
 	var out: Array[Vector3] = []
-	var a := cave.world_to_cell(from)
-	var b := cave.world_to_cell(to)
-	var exact := cave.is_floor(b.x, b.y)
+	var a: Vector2i = cave.world_to_cell(from)
+	var b: Vector2i = cave.world_to_cell(to)
+	var exact: bool = cave.is_floor(b.x, b.y)
 	if not exact:
 		b = _nearest_floor(b)
 	if not cave.is_floor(a.x, a.y):
@@ -824,8 +868,8 @@ func fight_near(p: Vector3) -> bool:
 
 
 func line_of_sight(a: Vector3, b: Vector3) -> bool:
-	var p := cave.world_to_cell(a)
-	var q := cave.world_to_cell(b)
+	var p: Vector2i = cave.world_to_cell(a)
+	var q: Vector2i = cave.world_to_cell(b)
 	var dx := absi(q.x - p.x)
 	var dy := -absi(q.y - p.y)
 	var sx := 1 if p.x < q.x else -1
@@ -834,7 +878,8 @@ func line_of_sight(a: Vector3, b: Vector3) -> bool:
 	var x := p.x
 	var y := p.y
 	while true:
-		if not cave.is_floor(x, y):
+		var ends := (x == p.x and y == p.y) or (x == q.x and y == q.y)   # standing in a thicket you can still see out
+		if not ends and (cave.blocks_sight(x, y) if cave.has_method("blocks_sight") else not cave.is_floor(x, y)):
 			return false
 		if x == q.x and y == q.y:
 			return true

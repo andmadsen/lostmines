@@ -10,7 +10,7 @@ var plan := ""
 func _ready() -> void:
 	out = OS.get_environment("LM_OUT")
 	plan = OS.get_environment("LM_PLAN")
-	scene = load("res://scenes/test_cave.tscn").instantiate()
+	scene = load("res://scenes/%s.tscn" % (OS.get_environment("LM_SCENE") if OS.get_environment("LM_SCENE") != "" else "test_cave")).instantiate()
 	add_child(scene)
 
 func _process(_d: float) -> void:
@@ -442,6 +442,37 @@ func _process(_d: float) -> void:
 		if frame > 3 and scene.paused: scene.paused = false
 		if frame == 40:
 			_save("lineup")
+			get_tree().quit()
+	elif plan == "view":
+		# a still from anywhere: LM_FOCUS="x,z", LM_DIST, LM_PITCH, LM_YAW (degrees)
+		if frame == 3:
+			var f := OS.get_environment("LM_FOCUS").split(",") if OS.get_environment("LM_FOCUS") != "" else PackedStringArray()
+			if f.size() == 2:
+				var fx := float(f[0])
+				var fz := float(f[1])
+				scene.rig.focus(Vector3(fx, scene.ground_y(Vector3(fx, 0, fz)), fz))
+			var dist := float(OS.get_environment("LM_DIST")) if OS.get_environment("LM_DIST") != "" else 14.0
+			scene.rig._target_distance = dist
+			scene.rig.distance = dist
+			scene.rig.pitch = deg_to_rad(float(OS.get_environment("LM_PITCH")) if OS.get_environment("LM_PITCH") != "" else -40.0)
+			scene.rig.yaw = deg_to_rad(float(OS.get_environment("LM_YAW")) if OS.get_environment("LM_YAW") != "" else 0.0)
+		if frame == 40:
+			_save(OS.get_environment("LM_NAME") if OS.get_environment("LM_NAME") != "" else "view")
+			get_tree().quit()
+	elif plan == "ambush":
+		# the party walks up the road; prints what happens (run headless for speed)
+		if frame == 5:
+			scene.paused = false
+			for u in scene.party:
+				u.order_move(Vector3(u.global_position.x, 0, 38 + (u.global_position.z - 80)))
+		if frame > 5 and scene.paused: scene.paused = false
+		if frame % 300 == 0:
+			var line := "t=%d" % frame
+			for u in scene.units:
+				line += " %s(%.0f,%.0f,y%.1f hp%d %s)" % [u.data_id.substr(0, 3), u.global_position.x, u.global_position.z, u.global_position.y, u.hp, u.ai_state if u.is_monster else u.order]
+			print(line)
+		if frame == 3600:
+			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
 	elif plan == "outfits":
 		# prints which outfit meshes a hero shows

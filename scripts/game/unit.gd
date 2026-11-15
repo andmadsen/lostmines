@@ -342,11 +342,12 @@ func _follow_path(delta: float) -> bool:
 	var to := _flat(wp) - _flat(pos)
 	var step := speed * delta
 	if to.length() <= step:
-		global_position = Vector3(wp.x, 0, wp.z)
+		global_position = Vector3(wp.x, game.ground_y(wp), wp.z)
 		path.remove_at(0)
 	else:
 		var dir := to.normalized()
-		global_position += Vector3(dir.x, 0, dir.y) * step
+		var np := global_position + Vector3(dir.x, 0, dir.y) * step
+		global_position = Vector3(np.x, game.ground_y(np), np.z)   # follow the ground over hills
 		_face(pos + Vector3(dir.x, 0, dir.y))
 	return true
 

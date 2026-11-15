@@ -7,6 +7,7 @@ extends Node3D
 const TILE := 2.0
 const WALL_HEIGHT := 3.4
 
+var tile := TILE   ## size of one path-finding cell in metres
 var layout: Array[String] = []
 var w := 0
 var h := 0
