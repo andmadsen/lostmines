@@ -338,7 +338,9 @@ func _attach_items(equipment: Dictionary) -> void:
 	var helm := DataDB.item(str(equipment.get("head", "")))
 	if hair:
 		hair.visible = helm.is_empty()
-	if not helm.is_empty():
+	if not helm.is_empty() and str(helm.get("visual", {}).get("model", "")) != "":
+		head_slot.add_child(ModelFit.helmet(helm.get("visual", {})))
+	elif not helm.is_empty():
 		var hv: Dictionary = helm.get("visual", {})
 		var hm := _mesh(head_slot, _sphere(0.175, true), Vector3(0, 0.02, 0), mat(str(hv.get("color", "#9aa2aa")), 0.9, 0.35))
 		hm.scale = Vector3(1, 1.05, 1.05)

@@ -37,3 +37,37 @@ by Vlasov Daniil (https://sketchfab.com/dan741vlasov) is licensed under CC-BY-4.
   bow & arrow, healing, stop sign, switch weapon, torch, info, spell book — by Delapouite;
   shield — by sbed.
 - **Panels, frames and slots** (`ui/skin/`) are drawn by `tools/make_ui_skin.py` for this project.
+
+## Gear library (`assets/gear/`)
+
+All from Sketchfab, licensed CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/):
+
+| File | Model | Author | Source |
+|---|---|---|---|
+| armor_noble_knight.glb | Female Noble Knight Armor | Meast | https://sketchfab.com/3d-models/female-noble-knight-armor-5b40c2e4b40d48378d595268d2db69bb |
+| armor_avacynian.glb | Avacynian Knight Armor | shaundrodgers | https://sketchfab.com/3d-models/avacynian-knight-armor-d6cc1b40412c4eb9bcf61e6accfbc89b |
+| armor_leather.glb | Leather Armor | Blueprint Games | https://sketchfab.com/3d-models/leather-armor-0693e6cbc82b47f7a8c08a7bb87ae72b |
+| armor_arm.glb | Armor | senseimitz | https://sketchfab.com/3d-models/armor-6a7bec36d57548ad86841f808f847bb0 |
+| armor_shoulder.glb | Armor shoulder | senseimitz | https://sketchfab.com/3d-models/armor-shoulder-cb5c336c7ae74edc996ab4b01b9843ed |
+| armor_hauberk.glb | Hauberk | askei | https://sketchfab.com/3d-models/hauberk-8881e32f0595469fa12b18e28155cc78 |
+| helm_winged.glb | Knight's Helm | ArtLeaving | https://sketchfab.com/3d-models/knights-helm-bdde181ac1e64b97ad92d9e2ab5a4dbb |
+| helm_great.glb | Simple Steel Helmet (Game Model) | Michael Makivic | https://sketchfab.com/3d-models/simple-steel-helmet-game-model-1603f60804c941cba0ffeacea20a7f32 |
+| helm_barbuta.glb | Visored Barbuta Helmet | Multipainkiller Studio | https://sketchfab.com/3d-models/visored-barbuta-helmet-8ce8003e097a4e30a5b96f612200f986 |
+| helm_kettle.glb | Helmet - Archery | Multipainkiller Studio | https://sketchfab.com/3d-models/helmet-archery-5b082c77519345b2a37d3beaff65418a |
+| helm_nasal.glb | helmet | Vanuartw | https://sketchfab.com/3d-models/helmet-9b1f2ef287874165872ae60f54dc0f0f |
+| sword_chevalier.glb | Chevalier Sword | rubenve | https://sketchfab.com/3d-models/chevalier-sword-b2662f2666a844e8a1bd0e7c4a7672d8 |
+| sword_short.glb | medieval sword | LowSeb | https://sketchfab.com/3d-models/medieval-sword-da574cba504e4b83a3293f3d3bd067fb |
+| sword_zweihander.glb | Zweihander | Siesta | https://sketchfab.com/3d-models/zweihander-bde0f0351bf443f6bed68aeff84b4129 |
+| dagger.glb | Dagger Low poly | Teliri | https://sketchfab.com/3d-models/dagger-low-poly-01db689d606a4cbb879b1fba67b55fa8 |
+| warhammer.glb | Medieval War Hammer | Parelaxel | https://sketchfab.com/3d-models/medieval-war-hammer-665734b41cce4a49abeb757c3bda7705 |
+| axe_viking.glb | Viking battle axe | Mikhail Antonov | https://sketchfab.com/3d-models/viking-battle-axe-b7123192adbf40f68043c57dd8ddcd15 |
+| staff_wizard.glb | Wizard's Staff | TKenterprise | https://sketchfab.com/3d-models/wizards-staff-f76dac28f45048a6871f6fa00b28b261 |
+| staff_wizard2.glb | Wizard Staff | Gw1p | https://sketchfab.com/3d-models/wizard-staff-58f829b40e2a4054a1b5bcaa1b12add3 |
+| crossbow.glb | Medieval crossbow 01 | Chellew | https://sketchfab.com/3d-models/medieval-crossbow-01-3a2010edc90346448017be61940eedfc |
+| scimitar.glb | Curved Sword | Turstrigo | https://sketchfab.com/3d-models/curved-sword-0b6bf732396441329257957a21596111 |
+| falcata.glb | PBR Falcata Sword | Ferocious Industries | https://sketchfab.com/3d-models/pbr-falcata-sword-93ec35d580674c83b257e0e00e1eeaf7 |
+| shield_kite.glb | Medieval Kite Shield | iedalton | https://sketchfab.com/3d-models/medieval-kite-shield-ef454e3700a7462eb27af245e685529a |
+| shield_heater_wood.glb | Medieval Wood Heater Shield | iedalton | https://sketchfab.com/3d-models/medieval-wood-heater-shield-2a3aba2c1ef041168fab0c595e2e5882 |
+| shield_viking.glb | Viking shield | kozachoks | https://sketchfab.com/3d-models/viking-shield-bd46de8bbfd74b5cb821eb06ac668542 |
+| shield_lion.glb | Medieval Shield | Digital Goblin | https://sketchfab.com/3d-models/medieval-shield-64c665915daf4e50b2d361b9ce52a3e1 |
+| shield_heater_fleur.glb | Heater Shield | FlukierJupiter | https://sketchfab.com/3d-models/heater-shield-9b1161c5e56e43218d42c639e3511fe5 |

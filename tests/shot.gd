@@ -175,6 +175,37 @@ func _process(_d: float) -> void:
 			_save("ui_wizard")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "gallery":
+		var combos := [
+			[0, {"main_hand": "longsword", "off_hand": "heater_shield", "head": "great_helm"}],
+			[0, {"main_hand": "zweihander", "off_hand": "", "head": "winged_helm"}],
+			[0, {"main_hand": "battleaxe", "off_hand": "kite_shield", "head": "barbuta"}],
+			[2, {"main_hand": "warhammer", "off_hand": "lion_shield", "head": "kettle_hat"}],
+			[2, {"main_hand": "mace", "off_hand": "wooden_shield", "head": "iron_helm"}],
+			[1, {"main_hand": "light_crossbow", "off_hand": "", "head": ""}],
+			[3, {"main_hand": "quarterstaff", "off_hand": "", "head": ""}],
+			[1, {"main_hand": "dagger", "off_hand": "", "head": ""}],
+		]
+		var idx := int((frame - 10) / 14)
+		if frame >= 10 and (frame - 10) % 14 == 0 and idx < combos.size():
+			scene.paused = false
+			var c: Array = combos[idx]
+			var u: Unit = scene.party[c[0]]
+			for k in c[1]:
+				u.equipment[k] = c[1][k]
+			u.visual.apply_equipment(u.equipment)
+			u.visual.set_armed(true)
+			u._calm = -999.0
+			var s := float(DataDB.heroes[u.data_id]["look"].get("scale", 1.0))
+			scene.rig.focus(u.global_position + Vector3(0, 1.0 * s, 0))
+			scene.rig._target_distance = 2.6 * s + 0.6
+			scene.rig.distance = 2.6 * s + 0.6
+			scene.rig.pitch = deg_to_rad(-10.0)
+			scene.rig.yaw = u.rotation.y + PI + 0.5
+		if frame >= 10 and (frame - 10) % 14 == 12 and idx < combos.size():
+			_save("gal_%d" % idx)
+		if frame == 10 + 14 * combos.size():
+			get_tree().quit()
 	elif plan == "heights":
 		if frame == 20:
 			for u in scene.party:

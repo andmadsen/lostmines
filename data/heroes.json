@@ -37,7 +37,9 @@
         "plate_armor",
         "iron_helm",
         "steel_shield",
-        "torch"
+        "torch",
+        "zweihander",
+        "heater_shield"
       ],
       "background": "Soldier",
       "alignment": "Lawful Good",
@@ -100,7 +102,8 @@
       },
       "inventory": [
         "shortsword",
-        "dagger"
+        "dagger",
+        "falcata"
       ],
       "speed": 2.6,
       "background": "Urchin",
@@ -139,7 +142,9 @@
         "head": ""
       },
       "inventory": [
-        "iron_helm"
+        "iron_helm",
+        "warhammer",
+        "lion_shield"
       ],
       "spells": [
         "cure_wounds"

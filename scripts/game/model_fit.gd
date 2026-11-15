@@ -150,6 +150,36 @@ static func shield(v: Dictionary) -> Node3D:
 	return holder
 
 
+## Fits a downloaded helmet on the head slot: centred on its bounding box,
+## scaled so its width is "size" metres, turned by "rotation" [x,y,z] and
+## moved by "offset" [x,y,z] (both from the item data).
+static func helmet(v: Dictionary) -> Node3D:
+	var path := str(v.get("model", ""))
+	var holder := Node3D.new()
+	if path == "" or not ResourceLoader.exists(path):
+		return holder
+	var model: Node3D = (load(path) as PackedScene).instantiate()
+	holder.add_child(model)
+	_tune_materials(model, float(v.get("brightness", 1.0)), float(v.get("metallic", -1.0)))
+	var rot: Array = v.get("rotation", [0, 0, 0])
+	var r := Basis.from_euler(Vector3(deg_to_rad(rot[0]), deg_to_rad(rot[1]), deg_to_rad(rot[2])))
+	var verts := _collect(model)
+	if verts.size() < 4:
+		return holder
+	var lo := Vector3(INF, INF, INF)
+	var hi := -lo
+	for p in verts:
+		var q := r * p
+		lo = lo.min(q)
+		hi = hi.max(q)
+	var c := (lo + hi) * 0.5
+	var width := maxf(hi.x - lo.x, hi.z - lo.z)
+	var s := float(v.get("size", 0.26)) / maxf(0.0001, width)
+	var off: Array = v.get("offset", [0, 0.06, 0])
+	model.transform = Transform3D(r * s, -(r * s * (r.inverse() * c)) + Vector3(off[0], off[1], off[2]))
+	return holder
+
+
 ## Brightens a model's materials (copies them, so the original file is untouched).
 static func _tune_materials(root: Node3D, brightness: float, metallic: float) -> void:
 	if is_equal_approx(brightness, 1.0) and metallic < 0.0:

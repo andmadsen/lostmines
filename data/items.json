@@ -9,9 +9,12 @@
       "reach": 1.8,
       "visual": {
         "mesh": "sword",
-        "length": 0.95,
+        "length": 1.0,
         "color": "#c8ccd2",
-        "sheathe": "hip"
+        "sheathe": "hip",
+        "model": "res://assets/gear/sword_chevalier.glb",
+        "brightness": 1.1,
+        "metallic": 0.5
       }
     },
     {
@@ -23,9 +26,12 @@
       "reach": 1.8,
       "visual": {
         "mesh": "axe",
-        "length": 0.9,
+        "length": 0.8,
         "color": "#9aa0a8",
-        "sheathe": "hip"
+        "sheathe": "hip",
+        "model": "res://assets/gear/axe_viking.glb",
+        "flip": true,
+        "grip": 0.15
       }
     },
     {
@@ -54,9 +60,12 @@
       "reach": 1.6,
       "visual": {
         "mesh": "sword",
-        "length": 0.6,
+        "length": 0.78,
         "color": "#d0d4da",
-        "sheathe": "hip"
+        "sheathe": "hip",
+        "model": "res://assets/gear/sword_short.glb",
+        "brightness": 1.1,
+        "metallic": 0.5
       }
     },
     {
@@ -68,9 +77,10 @@
       "reach": 1.5,
       "visual": {
         "mesh": "sword",
-        "length": 0.32,
+        "length": 0.36,
         "color": "#d0d4da",
-        "sheathe": "hip"
+        "sheathe": "hip",
+        "model": "res://assets/gear/dagger.glb"
       }
     },
     {
@@ -82,9 +92,10 @@
       "reach": 1.6,
       "visual": {
         "mesh": "sword",
-        "length": 0.7,
+        "length": 0.85,
         "color": "#8a8478",
-        "sheathe": "hip"
+        "sheathe": "hip",
+        "model": "res://assets/gear/scimitar.glb"
       }
     },
     {
@@ -115,7 +126,7 @@
       "reach": 1.8,
       "visual": {
         "mesh": "staff",
-        "length": 1.7,
+        "length": 1.6,
         "color": "#6a4a2a",
         "glow": "#a98bff"
       }
@@ -220,7 +231,15 @@
       "visual": {
         "mesh": "round_shield",
         "color": "#7a1e1e",
-        "rim": "#8a8f96"
+        "rim": "#8a8f96",
+        "model": "res://assets/gear/shield_viking.glb",
+        "size": 0.72,
+        "offset": [
+          0.13,
+          0,
+          0
+        ],
+        "flip": true
       }
     },
     {
@@ -285,6 +304,165 @@
         "sheathe": "hip",
         "mesh": "mace",
         "color": "#7a6a5a"
+      }
+    },
+    {
+      "id": "warhammer",
+      "name": "Warhammer",
+      "type": "weapon",
+      "damage": "1d8",
+      "ability": "str",
+      "reach": 1.6,
+      "visual": {
+        "model": "res://assets/gear/warhammer.glb",
+        "length": 0.8,
+        "flip": true,
+        "grip": 0.15,
+        "sheathe": true
+      }
+    },
+    {
+      "id": "zweihander",
+      "name": "Zweih\u00e4nder",
+      "type": "weapon",
+      "two_handed": true,
+      "damage": "2d6",
+      "ability": "str",
+      "reach": 1.9,
+      "visual": {
+        "model": "res://assets/gear/sword_zweihander.glb",
+        "length": 1.45,
+        "brightness": 1.1,
+        "metallic": 0.5
+      }
+    },
+    {
+      "id": "light_crossbow",
+      "name": "Light Crossbow",
+      "type": "weapon",
+      "ranged": true,
+      "two_handed": true,
+      "damage": "1d8",
+      "ability": "dex",
+      "range": 24.0,
+      "reach": 24.0,
+      "visual": {
+        "model": "res://assets/gear/crossbow.glb",
+        "length": 0.75,
+        "sheathe": false
+      }
+    },
+    {
+      "id": "falcata",
+      "name": "Falcata",
+      "type": "weapon",
+      "damage": "1d6",
+      "ability": "finesse",
+      "reach": 1.6,
+      "visual": {
+        "model": "res://assets/gear/falcata.glb",
+        "length": 0.75,
+        "sheathe": "hip"
+      }
+    },
+    {
+      "id": "kite_shield",
+      "name": "Kite Shield",
+      "type": "shield",
+      "ac": 2,
+      "visual": {
+        "model": "res://assets/gear/shield_kite.glb",
+        "size": 0.95,
+        "offset": [
+          0.13,
+          0,
+          0
+        ],
+        "flip": true
+      }
+    },
+    {
+      "id": "heater_shield",
+      "name": "Heater Shield (Fleur-de-lis)",
+      "type": "shield",
+      "ac": 2,
+      "visual": {
+        "model": "res://assets/gear/shield_heater_fleur.glb",
+        "size": 0.75,
+        "offset": [
+          0.13,
+          0,
+          0
+        ],
+        "flip": true
+      }
+    },
+    {
+      "id": "lion_shield",
+      "name": "Lion Shield",
+      "type": "shield",
+      "ac": 2,
+      "visual": {
+        "model": "res://assets/gear/shield_lion.glb",
+        "size": 0.75,
+        "offset": [
+          0.13,
+          0,
+          0
+        ],
+        "flip": true
+      }
+    },
+    {
+      "id": "oak_shield",
+      "name": "Oak Heater Shield",
+      "type": "shield",
+      "ac": 2,
+      "visual": {
+        "model": "res://assets/gear/shield_heater_wood.glb",
+        "size": 0.75,
+        "offset": [
+          0.13,
+          0,
+          0
+        ],
+        "flip": true
+      }
+    },
+    {
+      "id": "great_helm",
+      "name": "Great Helm",
+      "type": "helmet",
+      "visual": {
+        "model": "res://assets/gear/helm_great.glb",
+        "size": 0.27
+      }
+    },
+    {
+      "id": "barbuta",
+      "name": "Barbuta",
+      "type": "helmet",
+      "visual": {
+        "model": "res://assets/gear/helm_barbuta.glb",
+        "size": 0.26
+      }
+    },
+    {
+      "id": "kettle_hat",
+      "name": "Kettle Hat",
+      "type": "helmet",
+      "visual": {
+        "model": "res://assets/gear/helm_kettle.glb",
+        "size": 0.3
+      }
+    },
+    {
+      "id": "winged_helm",
+      "name": "Winged Knight's Helm",
+      "type": "helmet",
+      "visual": {
+        "model": "res://assets/gear/helm_winged.glb",
+        "size": 0.27
       }
     }
   ]
