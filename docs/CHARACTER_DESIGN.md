@@ -168,5 +168,9 @@ Test plans (`tests/shot.gd`): `gearclose` (close-up from four sides; `LM_HERO`,
 * Measure height from the head bone (Head bone height x `look.scale`
   + ~0.15 m), not from the body mesh: clothes split hidden skin off the body
   and the mesh looks shorter (Shirvani came out 2 m tall).
+* Clothes are matched to MakeHuman assets by name, longest first: one asset
+  name can be part of another (`donitz_monk_robe` / `..._hood_down`).
+* Plain one-colour garments look dull: give them a `pattern`, gold `bands`
+  at hem and cuffs and something at the waist (belt, book, pouches).
 * Hair with a near-black texture cannot be tinted; pick a light (blond/grey)
   hair and tint it.

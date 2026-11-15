@@ -24,7 +24,7 @@ meshes = [o for o in bpy.data.objects if o.type == "MESH"]
 for o in meshes:
     hide = o.name.startswith("body_hide") or (o.name.startswith("outfit_") and o.name[7:] not in shown)
     o.hide_render = hide
-vis = [o for o in meshes if not o.hide_render and o.name.startswith("Human")] or [o for o in meshes if not o.hide_render]
+vis = [o for o in meshes if not o.hide_render]
 pts = [o.matrix_world @ mathutils.Vector(c) for o in vis for c in o.bound_box]
 lo = mathutils.Vector([min(p[i] for p in pts) for i in range(3)])
 hi = mathutils.Vector([max(p[i] for p in pts) for i in range(3)])

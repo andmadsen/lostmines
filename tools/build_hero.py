@@ -73,6 +73,92 @@ OUTFITS = {
 SMOOTH = {"leather": 14, "chain": 8, "under_top": 4, "plate": 8}
 
 
+def _paint_damask(path, base, accent, seed=5):
+    """A tileable woven cloth with a faint embroidered pattern (scrolls and
+    small diamonds) in the accent colour."""
+    from PIL import Image, ImageDraw, ImageFilter
+    import random
+    w = h = 512
+    rnd = random.Random(seed)
+    b = tuple(int(c * 255) for c in base)
+    a = tuple(int(c * 255) for c in accent)
+    im = Image.new("RGB", (w, h), b)
+    px = im.load()
+    for y in range(h):   # weave: fine crossing threads
+        for x in range(w):
+            k = 0.94 + 0.04 * ((x // 2 + y // 2) % 2) + rnd.uniform(-0.02, 0.02)
+            px[x, y] = tuple(max(0, min(255, int(v * k))) for v in b)
+    over = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(over)
+    col = a + (150,)
+    step = 128
+    for gy in range(0, h + step, step):
+        for gx in range(0, w + step, step):
+            ox = gx + (step // 2 if (gy // step) % 2 else 0)
+            for dx in (-w, 0, w):        # draw wrapped so the texture tiles
+                for dy in (-h, 0, h):
+                    cx, cy = ox + dx, gy + dy
+                    # scroll: two mirrored curls and a diamond
+                    for sgn in (-1, 1):
+                        pts = []
+                        for i in range(14):
+                            t = i / 13 * 4.2
+                            r = 6 + 3.2 * t
+                            pts.append((cx + sgn * (r * math.cos(t) * 0.9), cy + r * math.sin(t) * 0.7 - 6))
+                        d.line(pts, fill=col, width=3)
+                    d.polygon([(cx, cy - 26), (cx + 7, cy - 18), (cx, cy - 10), (cx - 7, cy - 18)], fill=col)
+                    d.ellipse([cx - 3 + step // 2, cy + step // 2 - 3, cx + 3 + step // 2, cy + step // 2 + 3], fill=col)
+    over = over.filter(ImageFilter.GaussianBlur(0.8))
+    im.paste(over, (0, 0), over)
+    im.save(path)
+
+
+def _paint_trim(path, gold, dark):
+    """An embroidered border: gold band, darker edge lines and a running scroll."""
+    from PIL import Image, ImageDraw, ImageFilter
+    w, h = 512, 64
+    g = tuple(int(c * 255) for c in gold)
+    k = tuple(int(c * 255) for c in dark)
+    im = Image.new("RGB", (w, h), g)
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, w, 5], fill=k)
+    d.rectangle([0, h - 6, w, h], fill=k)
+    for x0 in range(-64, w + 64, 64):   # running scroll, tiles every 64 px
+        pts = [(x0 + i * 4, h / 2 + 14 * math.sin(i / 16 * 2 * math.pi)) for i in range(17)]
+        d.line(pts, fill=k, width=4)
+        d.ellipse([x0 + 26, h / 2 - 20, x0 + 38, h / 2 - 8], fill=k)
+        d.ellipse([x0 + 58, h / 2 + 8, x0 + 70, h / 2 + 20], fill=k)
+    im = im.filter(ImageFilter.GaussianBlur(0.6))
+    im.save(path)
+
+
+def _image_material(name, tex, rough=0.8, metallic=0.0, scale=1.0, normal=None):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+    bsdf.inputs["Roughness"].default_value = rough
+    bsdf.inputs["Metallic"].default_value = metallic
+    uv = nt.nodes.new("ShaderNodeTexCoord")
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (scale, scale, scale)
+    nt.links.new(uv.outputs["UV"], mp.inputs["Vector"])
+    img = nt.nodes.new("ShaderNodeTexImage")
+    img.image = bpy.data.images.load(tex, check_existing=False)
+    img.image.pack()
+    nt.links.new(mp.outputs["Vector"], img.inputs["Vector"])
+    nt.links.new(img.outputs["Color"], bsdf.inputs["Base Color"])
+    if normal and os.path.exists(normal):
+        nimg = nt.nodes.new("ShaderNodeTexImage")
+        nimg.image = bpy.data.images.load(normal, check_existing=True)
+        nimg.image.colorspace_settings.name = "Non-Color"
+        nt.links.new(mp.outputs["Vector"], nimg.inputs["Vector"])
+        nm = nt.nodes.new("ShaderNodeNormalMap")
+        nt.links.new(nimg.outputs["Color"], nm.inputs["Color"])
+        nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
+    return m
+
+
 def _material(kind, colour, tex_scale=None):
     m = bpy.data.materials.new(f"{kind}_{len(bpy.data.materials)}")
     m.use_nodes = True
@@ -1198,6 +1284,231 @@ def make_quiver(body, spec, root):
     return ob
 
 
+# ---------------------------------------------------------------- bands
+# Embroidered borders laid around a garment: at the hem (around the body)
+# and at the end of each sleeve (around the forearm). Rays find the outside
+# of the garment, so they work on double-layered MakeHuman cloth too.
+def make_bands(body, root, cid, specs):
+    import bmesh
+    import mathutils
+    from mathutils.bvhtree import BVHTree
+    ob = next((o for o in ObjectService.get_list_of_children(root) if o.name == "outfit_" + cid), None)
+    if ob is None:
+        print("  ! bands: no outfit", cid)
+        return None
+    rig = _rig_of(body)
+    dg = bpy.context.evaluated_depsgraph_get()
+    tree = BVHTree.FromObject(ob, dg)
+    verts = [ob.matrix_world @ v.co for v in ob.data.vertices]
+    N = 48
+    bm = bmesh.new()
+    uvl = bm.loops.layers.uv.new()
+    groups = {}   # face -> bone
+    for sp in specs:
+        H = sp.get("height", 0.04)
+        if sp.get("axis", "body") == "body":
+            centre = mathutils.Vector((0, _bone_head(rig, "Hips").y, min(v.z for v in verts) + sp.get("from_bottom", 0.03) + H / 2))
+            ax = mathutils.Vector((0, 0, 1))
+            u0 = mathutils.Vector((1, 0, 0))
+            bone = "Hips"
+        else:
+            bone = sp["axis"]
+            h, t = _bone_head(rig, bone), rig.data.bones[B + bone]
+            tail = rig.matrix_world @ t.tail_local
+            ax = (tail - h).normalized()
+            # the sleeve ends where the garment ends along the forearm
+            near = [((v - h).dot(ax)) for v in verts if ((v - h) - ax * (v - h).dot(ax)).length < sp.get("reach", 0.11)]
+            end = max(near) if near else (tail - h).length
+            centre = h + ax * (end - sp.get("inset", 0.02) - H / 2)
+            u0 = ax.cross(mathutils.Vector((0, 0, 1)))
+            u0 = u0.normalized() if u0.length > 1e-4 else mathutils.Vector((1, 0, 0))
+        u1 = ax.cross(u0).normalized()
+        R0 = sp.get("probe", 0.6 if bone == "Hips" else 0.25)
+
+        def radius(c, d):
+            hit = tree.ray_cast(c + d * R0, -d, R0)
+            return (R0 - hit[3]) if hit[0] is not None else None
+        rows = []
+        for k in (-0.5, 0.5):
+            c = centre + ax * (k * H)
+            rr = []
+            for i in range(N):
+                a = 2 * math.pi * i / N
+                d = u0 * math.cos(a) + u1 * math.sin(a)
+                rr.append(radius(c, d))
+            rows.append((c, rr))
+        rs = []
+        for i in range(N):
+            vals = [r[1][i] for r in rows if r[1][i] is not None]
+            rs.append(max(vals) + sp.get("lift", 0.0025) if vals else None)
+        good = [r for r in rs if r is not None]
+        if not good:
+            continue
+        avg = sum(good) / len(good)
+        rs = [r if r is not None else avg for r in rs]
+        for _ in range(2):
+            rs = [(rs[i - 1] + 2 * rs[i] + rs[(i + 1) % N]) / 4 for i in range(N)]
+        lo, hi = [], []
+        for i in range(N):
+            a = 2 * math.pi * i / N
+            d = u0 * math.cos(a) + u1 * math.sin(a)
+            lo.append(bm.verts.new(rows[0][0] + d * rs[i]))
+            hi.append(bm.verts.new(rows[1][0] + d * rs[i]))
+        circ = 2 * math.pi * avg
+        for i in range(N):
+            j = (i + 1) % N
+            f = bm.faces.new([lo[i], lo[j], hi[j], hi[i]])
+            ua, ub = i / N * circ / H / 4, (i + 1) / N * circ / H / 4
+            for lp, uv in zip(f.loops, [(ua, 0), (ub, 0), (ub, 1), (ua, 1)]):
+                lp[uvl].uv = uv
+            groups[f] = bone
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    me = bpy.data.meshes.new("bands_" + cid)
+    vb = {}
+    for f, bone in groups.items():
+        for v in f.verts:
+            vb[v] = bone
+    bm.verts.index_update()
+    vbi = {v.index: b for v, b in vb.items()}
+    bm.to_mesh(me)
+    bm.free()
+    tob = bpy.data.objects.new("outfit_" + cid + "_trim", me)
+    body.users_collection[0].objects.link(tob)
+    spec0 = specs[0]
+    tex = os.path.join(TEX, "_gen_trim_" + cid + ".png")
+    _paint_trim(tex, tuple(spec0.get("color", (0.8, 0.6, 0.24))), tuple(spec0.get("dark", (0.45, 0.3, 0.1))))
+    me.materials.append(_image_material(tob.name + "_mat", tex, 0.45, 0.6))
+    sol = tob.modifiers.new("thick", "SOLIDIFY")
+    sol.thickness = 0.0015
+    bpy.context.view_layer.objects.active = tob
+    bpy.ops.object.modifier_apply(modifier="thick")
+    for f in me.polygons:
+        f.use_smooth = True
+    # each band vertex moves exactly like the nearest point of the garment
+    from mathutils.kdtree import KDTree
+    kd = KDTree(len(ob.data.vertices))
+    for i, v in enumerate(ob.data.vertices):
+        kd.insert(ob.matrix_world @ v.co, i)
+    kd.balance()
+    names = {g.index: g.name for g in ob.vertex_groups}
+    for vi, v in enumerate(me.vertices):
+        _, src, _ = kd.find(tob.matrix_world @ v.co)
+        for g in ob.data.vertices[src].groups:
+            if g.weight < 1e-4 or g.group not in names:
+                continue
+            tg = tob.vertex_groups.get(names[g.group]) or tob.vertex_groups.new(name=names[g.group])
+            tg.add([vi], g.weight, "REPLACE")
+    tob.parent = rig
+    am = tob.modifiers.new("Armature", "ARMATURE")
+    am.object = rig
+    print("  bands:", tob.name, len(me.vertices), "verts")
+    return tob
+
+
+# ---------------------------------------------------------------- belt
+# A belt around the waist over everything worn, with a buckle, a small book
+# and pouches hanging from it. Rigid on the hips.
+def make_belt(body, spec, root):
+    import bmesh
+    import mathutils
+    from mathutils.bvhtree import BVHTree
+    rig = _rig_of(body)
+    dg = bpy.context.evaluated_depsgraph_get()
+    trees = [BVHTree.FromObject(o, dg) for o in [body] + ObjectService.get_list_of_children(root)
+             if o.type == "MESH" and (o == body or o.name.startswith("outfit_")) and "hair" not in o.name.lower()
+             and not o.name.endswith("_trim")]
+    hips = _bone_head(rig, "Hips")
+    z = hips.z + spec.get("up", 0.08)
+    H = spec.get("height", 0.05)
+    N = 48
+
+    def ring(zz):
+        pts = []
+        for i in range(N):
+            a = 2 * math.pi * i / N
+            d = mathutils.Vector((math.sin(a), -math.cos(a), 0))
+            P = spec.get("probe", 0.28)   # start inside the arms: only the body and what is worn on it
+            o = mathutils.Vector((d.x * P, hips.y + d.y * P, zz))
+            best = None
+            for t in trees:
+                hit = t.ray_cast(o, -d, P)
+                if hit[0] is not None and (best is None or hit[3] < best):
+                    best = hit[3]
+            r = P - best if best is not None else 0.15
+            pts.append(r)
+        return pts
+    rs = [max(a, b) + spec.get("gap", 0.006) for a, b in zip(ring(z - H / 2), ring(z + H / 2))]
+    for _ in range(3):
+        rs = [(rs[i - 1] + 2 * rs[i] + rs[(i + 1) % N]) / 4 for i in range(N)]
+    bm = bmesh.new()
+    uvl = bm.loops.layers.uv.new()
+    lo, hi = [], []
+    for i in range(N):
+        a = 2 * math.pi * i / N
+        d = (math.sin(a), -math.cos(a))
+        lo.append(bm.verts.new((d[0] * rs[i], hips.y + d[1] * rs[i], z - H / 2)))
+        hi.append(bm.verts.new((d[0] * rs[i], hips.y + d[1] * rs[i], z + H / 2)))
+    for i in range(N):
+        j = (i + 1) % N
+        f = bm.faces.new([lo[i], lo[j], hi[j], hi[i]])
+        for lp, uv in zip(f.loops, [(i / N * 8, 0), (j / N * 8, 0), (j / N * 8, 1), (i / N * 8, 1)]):
+            lp[uvl].uv = uv
+    belt_faces = set(bm.faces)
+    gold, leather = set(), set()
+
+    def box(centre, size, rot=0.0, uv=True):
+        ret = bmesh.ops.create_cube(bm, size=1.0, calc_uvs=uv)
+        m = mathutils.Matrix.Rotation(rot, 3, "Z")
+        for v in ret["verts"]:
+            v.co = centre + m @ mathutils.Vector((v.co.x * size[0], v.co.y * size[1], v.co.z * size[2]))
+        return {f for v in ret["verts"] for f in v.link_faces}
+
+    def at(angle_deg, out=0.0, dz=0.0):
+        a = math.radians(angle_deg)
+        i = int(round(angle_deg / 360 * N)) % N
+        r = rs[i] + out
+        return mathutils.Vector((math.sin(a) * r, hips.y - math.cos(a) * r, z + dz)), a
+    # buckle at the front
+    c, a = at(0, 0.006)
+    gold |= box(c, (0.05, 0.012, H * 1.2), a)
+    # pouches and the book hang from the belt
+    for item in spec.get("hang", []):
+        c, a = at(item.get("angle", 90), item.get("out", 0.03), -H / 2 - item.get("size", [0.1, 0.04, 0.12])[2] / 2 + 0.01)
+        sz = item.get("size", [0.1, 0.04, 0.12])
+        if item.get("type") == "book":
+            fs = box(c, sz, a)
+            leather |= fs
+            for sx in (-1, 1):   # gold corners
+                for sz_ in (-1, 1):
+                    gold |= box(c + mathutils.Matrix.Rotation(a, 3, "Z") @ mathutils.Vector((sx * sz[0] * 0.42, -sz[1] * 0.52, sz_ * sz[2] * 0.42)), (sz[0] * 0.18, 0.006, sz[2] * 0.14), a)
+            gold |= box(c + mathutils.Matrix.Rotation(a, 3, "Z") @ mathutils.Vector((0, -sz[1] * 0.52, 0)), (sz[0] * 0.3, 0.006, sz[0] * 0.3), a + math.radians(0))
+        else:
+            fs = box(c, sz, a)
+            leather |= fs
+            gold |= box(c + mathutils.Matrix.Rotation(a, 3, "Z") @ mathutils.Vector((0, -sz[1] * 0.55, sz[2] * 0.25)), (0.014, 0.006, 0.014), a)
+    for f in bm.faces:
+        f.material_index = 1 if f in gold else (2 if f in leather else 0)
+    me = bpy.data.meshes.new("belt")
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new("outfit_" + spec.get("id", "belt"), me)
+    body.users_collection[0].objects.link(ob)
+    me.materials.append(_material("leather", tuple(spec.get("color", (0.18, 0.22, 0.45)))))
+    me.materials.append(_material("gold", tuple(spec.get("metal", (0.85, 0.65, 0.28)))))
+    me.materials.append(_material("leather", tuple(spec.get("leather", (0.4, 0.24, 0.12)))))
+    sol = ob.modifiers.new("thick", "SOLIDIFY")
+    sol.thickness = 0.006
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.modifier_apply(modifier="thick")
+    g = ob.vertex_groups.new(name=B + "Hips")
+    g.add([v.index for v in me.vertices], 1.0, "REPLACE")
+    ob.parent = rig
+    am = ob.modifiers.new("Armature", "ARMATURE")
+    am.object = rig
+    print("  belt:", ob.name, len(me.vertices), "verts")
+    return ob
+
+
 def build(hero_id, out_path=None):
     heroes = {h["id"]: h for h in json.load(open(os.path.join(ROOT, "data", "heroes.json")))["heroes"]}
     body = heroes[hero_id]["body"]
@@ -1249,16 +1560,22 @@ def build(hero_id, out_path=None):
     eb = ObjectService.find_object_of_type_amongst_nearest_relatives(root, "Basemesh")
     _snap_to_helpers(eb, root)
     # name each clothing mesh outfit_<id> so the game can show/hide it
-    for c in body.get("clothes", []):
-        if not isinstance(c, dict):
-            continue
+    # longest asset names first: "donitz_monk_robe" is part of "donitz_monk_robe_hood_down"
+    for c in sorted([c for c in body.get("clothes", []) if isinstance(c, dict)], key=lambda c: -len(c["asset"])):
         for o in ObjectService.get_list_of_children(root):
-            if o.type == "MESH" and c["asset"] in o.name:
+            if o.type == "MESH" and c["asset"] in o.name and not o.name.startswith("outfit_"):
                 o.name = "outfit_" + c["id"]
                 if c.get("push"):  # lift a layer off the one beneath (boots over trousers)
                     for v in o.data.vertices:
                         v.co += v.normal * c["push"]
-                if c.get("material"):  # replace a dark texture with the project's cloth/leather look
+                if c.get("pattern"):  # woven cloth with a faint embroidered pattern
+                    pat = c["pattern"]
+                    tex = os.path.join(TEX, "_gen_pattern_" + c["id"] + ".png")
+                    _paint_damask(tex, tuple(c.get("color", (0.85, 0.82, 0.72))), tuple(pat.get("accent", (0.78, 0.6, 0.25))))
+                    o.data.materials.clear()
+                    o.data.materials.append(_image_material(o.name + "_cloth", tex, 0.85, 0.0, pat.get("scale", 6.0),
+                                                            os.path.join(TEX, "cloth_normal.png")))
+                elif c.get("material"):  # replace a dark texture with the project's cloth/leather look
                     o.data.materials.clear()
                     o.data.materials.append(_material(c["material"], tuple(c.get("color", (0.8, 0.78, 0.7))), c.get("tex_scale")))
                 if c.get("scale"):  # [width, depth, length] about its top-back-centre (a fuller beard)
@@ -1295,9 +1612,14 @@ def build(hero_id, out_path=None):
         make_panel(eb, spec, root)
     for spec in body.get("beards", []):
         make_beard(eb, spec, root)
+    for c in body.get("clothes", []):
+        if isinstance(c, dict) and c.get("bands"):
+            make_bands(eb, root, c["id"], c["bands"])
     for spec in body.get("props", []):
         if spec.get("type", "quiver") == "quiver":
             make_quiver(eb, spec, root)
+        elif spec["type"] == "belt":
+            make_belt(eb, spec, root)
     # stand on the floor: body targets (shorter legs) lift the feet off zero
     skin = [eb] + [o for o in ObjectService.get_list_of_children(root) if o.type == "MESH" and o.name.startswith("body_hide")]
     low = min((o.matrix_world @ v.co).z for o in skin for v in o.data.vertices)   # feet under boots are split off

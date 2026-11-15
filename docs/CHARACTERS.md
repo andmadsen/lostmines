@@ -173,13 +173,44 @@ laid on the beard at `x`. The face part follows the head, the hanging part the
 chest. Hair-strand texture is painted in `color` (no tint needed). MakeHuman's
 own beards are thin cards that cannot be made full - use this for dwarves.
 
-## 3d. Props (quiver)
+## 3c-2. Decorating cloth: patterns and borders
+
+On a `clothes` entry:
+
+    {"id": "robe", "asset": "donitz_monk_robe", "push": 0.016, "color": [0.88, 0.85, 0.76],
+     "pattern": {"accent": [0.8, 0.66, 0.36], "scale": 60},
+     "bands": [{"axis": "body", "from_bottom": 0.025, "height": 0.05, "color": [0.82, 0.62, 0.26]},
+               {"axis": "LeftForeArm", "height": 0.035, "reach": 0.09},
+               {"axis": "RightForeArm", "height": 0.035, "reach": 0.09}]}
+
+* `pattern`: the cloth gets a generated woven texture in `color` with a faint
+  embroidered pattern (scrolls, diamonds) in `accent`; `scale` = how small.
+* `bands`: embroidered gold borders as rings laid on the garment -
+  `"axis": "body"` = the hem (`from_bottom` metres up from its lowest point),
+  a bone name (`LeftForeArm`) = the end of that sleeve (found automatically;
+  `reach` = how far from the bone the sleeve is searched, `inset` = how far
+  in from the end). The band is a separate mesh `outfit_<id>_trim`: list it
+  with the garment in the armour item (`"outfits": ["robe", "robe_trim"]`).
+  Every band vertex copies the weights of the nearest garment vertex, so it
+  moves exactly with the cloth.
+* MakeHuman cloth is often double-layered with no open edges, so borders
+  are found by rays from outside, not by edge loops.
+
+## 3d. Props (quiver, belt)
 
     "props": [{"type": "quiver", "id": "quiver", "x": -0.05, "up": -0.06, "tilt": -28,
                "length": 0.42, "radius": 0.045, "arrows": 7, "color": [0.5, 0.3, 0.16]}]
 
 A leather quiver with arrows on the back (on top of a cape), slanted by `tilt`
 degrees (negative: top over the right shoulder), rigid on Spine2.
+
+    {"type": "belt", "id": "belt", "up": 0.1, "height": 0.055, "color": [0.2, 0.28, 0.62],
+     "hang": [{"type": "book", "angle": 100, "size": [0.15, 0.045, 0.19], "out": 0.03},
+              {"type": "pouch", "angle": -70, "size": [0.08, 0.04, 0.09], "out": 0.025}]}
+
+A belt `up` metres above the hips, wrapped over everything worn (rays start
+inside the arms), with a gold buckle and things hanging from it: `angle` 0 =
+front, 90 = the hero's right, -90 = left (keep the staff hand free).
 
 Generated outfits (`under_top`, `leather`, `chain`, `plate`) are smoothed so
 they do not follow every curve of the body (`SMOOTH` in `build_hero.py`), and

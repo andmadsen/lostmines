@@ -536,7 +536,8 @@
         },
         "outfits_always": [
           "boots",
-          "stole"
+          "stole",
+          "belt"
         ]
       },
       "equipment": {
@@ -590,26 +591,42 @@
           {
             "id": "robe",
             "asset": "donitz_monk_robe",
-            "material": "cloth",
             "color": [
-              0.86,
-              0.82,
-              0.7
+              0.88,
+              0.85,
+              0.76
             ],
-            "tex_scale": 40,
-            "push": 0.008
-          },
-          {
-            "id": "hood",
-            "asset": "donitz_monk_robe_hood_down",
-            "material": "cloth",
-            "color": [
-              0.84,
-              0.8,
-              0.68
-            ],
-            "push": 0.012,
-            "tex_scale": 40
+            "push": 0.016,
+            "pattern": {
+              "accent": [
+                0.8,
+                0.66,
+                0.36
+              ],
+              "scale": 60.0
+            },
+            "bands": [
+              {
+                "axis": "body",
+                "from_bottom": 0.025,
+                "height": 0.05,
+                "color": [
+                  0.82,
+                  0.62,
+                  0.26
+                ]
+              },
+              {
+                "axis": "LeftForeArm",
+                "height": 0.035,
+                "reach": 0.09
+              },
+              {
+                "axis": "RightForeArm",
+                "height": 0.035,
+                "reach": 0.09
+              }
+            ]
           }
         ],
         "outfits": [
@@ -626,7 +643,7 @@
             "belt": 0.0,
             "width_top": 0.16,
             "width_bottom": 0.17,
-            "gap": 0.012,
+            "gap": 0.03,
             "color": [
               0.16,
               0.2,
@@ -641,7 +658,52 @@
             "emblem": "moon",
             "emblem_y": 0.45,
             "emblem_y2": null,
-            "legs": 0.5
+            "legs": 0.9
+          }
+        ],
+        "props": [
+          {
+            "type": "belt",
+            "id": "belt",
+            "up": 0.1,
+            "height": 0.055,
+            "color": [
+              0.2,
+              0.28,
+              0.62
+            ],
+            "hang": [
+              {
+                "type": "book",
+                "angle": 100,
+                "size": [
+                  0.15,
+                  0.045,
+                  0.19
+                ],
+                "out": 0.03
+              },
+              {
+                "type": "pouch",
+                "angle": -70,
+                "size": [
+                  0.08,
+                  0.04,
+                  0.09
+                ],
+                "out": 0.025
+              },
+              {
+                "type": "pouch",
+                "angle": -110,
+                "size": [
+                  0.07,
+                  0.035,
+                  0.08
+                ],
+                "out": 0.025
+              }
+            ]
           }
         ]
       }

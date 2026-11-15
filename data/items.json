@@ -172,7 +172,7 @@
         "roughness": 0.9,
         "outfits": [
           "robe",
-          "hood"
+          "robe_trim"
         ]
       }
     },
