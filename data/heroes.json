@@ -43,7 +43,31 @@
       "alignment": "Lawful Good",
       "age": 27,
       "bio": "Aurelia Dawnblade carried a banner for the Neverwinter guard before a broken oath sent her south with nothing but her greatsword. She took the job escorting a wagon of supplies to Phandalin because Gundren Rockseeker paid in advance and asked no questions. She fights at the front, speaks little, and never leaves a companion behind.",
-      "xp": 0
+      "xp": 0,
+      "body": {
+        "gender": 0.0,
+        "age": 0.52,
+        "muscle": 0.68,
+        "weight": 0.52,
+        "height": 0.62,
+        "proportions": 0.7,
+        "cupsize": 0.45,
+        "firmness": 0.6,
+        "race": {
+          "african": 0.05,
+          "asian": 0.05,
+          "caucasian": 0.9
+        },
+        "skin": "toigo_light_skin_female_bronze",
+        "eyes": "low-poly",
+        "eyebrows": "mindfront_eyebrows_05",
+        "eyelashes": "mindfront_eyelashes_01",
+        "teeth": "teeth_base",
+        "tongue": "tongue01",
+        "hair": "elvs_ashley_may_hair",
+        "hair_color": "#5a3a24",
+        "clothes": []
+      }
     },
     {
       "id": "pip",

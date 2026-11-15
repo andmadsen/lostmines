@@ -155,7 +155,10 @@
         "style": "robe",
         "color": "#3d2f6b",
         "metallic": 0.0,
-        "roughness": 0.9
+        "roughness": 0.9,
+        "outfits": [
+          "robe"
+        ]
       }
     },
     {
@@ -168,7 +171,10 @@
         "style": "leather",
         "color": "#6b4a2c",
         "metallic": 0.0,
-        "roughness": 0.75
+        "roughness": 0.75,
+        "outfits": [
+          "leather"
+        ]
       }
     },
     {
@@ -181,7 +187,11 @@
         "style": "chain",
         "color": "#8f969e",
         "metallic": 0.85,
-        "roughness": 0.45
+        "roughness": 0.45,
+        "outfits": [
+          "chain",
+          "gloves"
+        ]
       }
     },
     {
@@ -194,7 +204,12 @@
         "style": "plate",
         "color": "#c9ced6",
         "metallic": 0.95,
-        "roughness": 0.22
+        "roughness": 0.22,
+        "outfits": [
+          "plate",
+          "chain",
+          "gloves"
+        ]
       }
     },
     {

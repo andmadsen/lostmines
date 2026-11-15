@@ -4,3 +4,4 @@
 
 # Third-party art (Mixamo etc.) stays out of git
 assets/
+__pycache__/

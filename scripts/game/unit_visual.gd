@@ -118,6 +118,7 @@ func _build_model(path: String) -> void:
 	model.rotation.y = PI   # Mixamo models face +Z; units face -Z
 	body.add_child(model)
 	_apply_textures(model, look.get("textures", {}))
+	_apply_tints(model, look.get("tints", {}))
 	var skel: Skeleton3D = model.find_child("Skeleton3D", true, false)
 	anim_player = model.find_child("AnimationPlayer", true, false)
 	var set_id := str(look.get("animation_set", ""))
@@ -128,7 +129,12 @@ func _build_model(path: String) -> void:
 	release_frac = float(aset.get("release", 0.5))
 	attack_speed = float(aset.get("attack_speed", 1.4))
 	cast_release = float(aset.get("cast_release", 0.5))
+	if anim_player == null and skel:
+		# glTF characters (e.g. built in MakeHuman) come without a player
+		anim_player = AnimationPlayer.new()
+		model.add_child(anim_player)
 	if anim_player:
+		var skel_path := str(anim_player.get_node(anim_player.root_node).get_path_to(skel)) if skel else "Skeleton3D"
 		for key in ["idle", "walk", "attack", "death", "cast"]:
 			var p := str(aset.get(key, ""))
 			if p == "":
@@ -140,6 +146,13 @@ func _build_model(path: String) -> void:
 			var sap: AnimationPlayer = src.find_child("AnimationPlayer", true, false)
 			if sap and sap.get_animation_list().size() > 0:
 				var anim: Animation = sap.get_animation(sap.get_animation_list()[0]).duplicate()
+				var src_skel: Skeleton3D = src.find_child("Skeleton3D", true, false)
+				if skel and src_skel and Retarget.needed(src_skel, skel):
+					anim = Retarget.convert(anim, src_skel, skel, skel_path, "%s|%s" % [path, p]).duplicate()
+				elif skel_path != "Skeleton3D":
+					for ti in anim.get_track_count():
+						var tp := anim.track_get_path(ti)
+						anim.track_set_path(ti, NodePath("%s:%s" % [skel_path, tp.get_concatenated_subnames()]))
 				anim.loop_mode = Animation.LOOP_LINEAR if key in ["idle", "walk"] else Animation.LOOP_NONE
 				if key == "attack":
 					_attack_len = anim.length
@@ -203,6 +216,36 @@ func _apply_textures(root: Node, tex: Dictionary) -> void:
 		(mi as MeshInstance3D).material_override = m
 
 
+## Characters built by tools/build_hero.py carry every outfit as its own
+## mesh ("outfit_plate", "outfit_boots"...). Show the ones the equipment
+## calls for: look.outfits_always, plus the worn armor's visual.outfits.
+func _show_outfits(equipment: Dictionary) -> void:
+	var meshes := model.find_children("outfit_*", "MeshInstance3D", true, false)
+	if meshes.is_empty():
+		return
+	var on: Array = look.get("outfits_always", ["under_top", "under_legs", "boots"]).duplicate()
+	for slot in ["armor", "head", "off_hand"]:
+		var it := DataDB.item(str(equipment.get(slot, "")))
+		on.append_array(it.get("visual", {}).get("outfits", []))
+	for m in meshes:
+		(m as Node3D).visible = str(m.name).trim_prefix("outfit_") in on
+
+
+## Tints parts of a model by name, e.g. look.tints = {"hair": "#5a3a24"}.
+func _apply_tints(root: Node, tints: Dictionary) -> void:
+	for key in tints:
+		for mi in root.find_children("*", "MeshInstance3D", true, false):
+			if not str(mi.name).to_lower().contains(str(key)):
+				continue
+			var m := mi as MeshInstance3D
+			for si in m.mesh.get_surface_count():
+				var src := m.get_active_material(si)
+				if src is StandardMaterial3D:
+					var c := (src as StandardMaterial3D).duplicate() as StandardMaterial3D
+					c.albedo_color = Color.html(str(tints[key]))
+					m.set_surface_override_material(si, c)
+
+
 func _bone_slot(skel: Skeleton3D, bone: String, g: Dictionary) -> Node3D:
 	var slot := Node3D.new()
 	if skel == null or skel.find_bone(bone) < 0:
@@ -240,6 +283,7 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 	_main_weapon = null
 	held_light = null
 	if using_model:
+		_show_outfits(equipment)
 		_attach_items(equipment)
 		return
 	var armor := DataDB.item(str(equipment.get("armor", "")))

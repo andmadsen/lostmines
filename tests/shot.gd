@@ -15,6 +15,19 @@ func _ready() -> void:
 
 func _process(_d: float) -> void:
 	frame += 1
+	# LM_SWAP=<hero index>:<model path>: try a model on a hero (all plans)
+	if frame == 2 and OS.get_environment("LM_SWAP") != "":
+		var sw := OS.get_environment("LM_SWAP").split(":", true, 1)
+		var hu: Unit = scene.party[int(sw[0])]
+		var lk: Dictionary = DataDB.heroes[hu.data_id]["look"].duplicate()
+		lk["model"] = sw[1]
+		lk["scale"] = float(OS.get_environment("LM_SCALE")) if OS.get_environment("LM_SCALE") != "" else 1.0
+		if OS.get_environment("LM_TINT") != "":
+			lk["tints"] = {"hair": OS.get_environment("LM_TINT")}
+		if OS.get_environment("LM_ARMOR") != "":
+			hu.equipment["armor"] = OS.get_environment("LM_ARMOR")
+		hu.visual.build(lk)
+		hu.visual.apply_equipment(hu.equipment)
 	if plan == "fight":
 		if frame == 30:
 			scene.rig.focus(Vector3(23, 0, 16))
@@ -58,7 +71,7 @@ func _process(_d: float) -> void:
 			if OS.get_environment("LM_SHEATHED") == "":
 				k.visual.set_armed(true)
 				k._calm = -999.0
-			scene.rig.focus(k.global_position + Vector3(0, 0.6, 0))
+			scene.rig.focus(k.global_position + Vector3(0, float(OS.get_environment("LM_FOCUSY")) if OS.get_environment("LM_FOCUSY") != "" else 0.6, 0))
 			var dist := float(OS.get_environment("LM_DIST")) if OS.get_environment("LM_DIST") != "" else 2.6
 			scene.rig._target_distance = dist
 			scene.rig.distance = dist
@@ -253,8 +266,36 @@ func _process(_d: float) -> void:
 				aabb = bb if first else aabb.merge(bb); first = false
 			print("sword world aabb ", aabb.size, " hand at ", a.visual.hand_r.global_position, " unit at ", a.global_position)
 			get_tree().quit()
+	elif plan == "walkseq":
+		var a: Unit = scene.party[0]
+		if frame == 2 and OS.get_environment("LM_MODEL") != "":
+			var lk: Dictionary = DataDB.heroes[a.data_id]["look"].duplicate()
+			lk["model"] = OS.get_environment("LM_MODEL")
+			lk["scale"] = 1.0
+			a.visual.build(lk)
+			a.visual.apply_equipment(a.equipment)
+		if frame == 5:
+			scene.paused = false
+			scene.rig._target_distance = 3.2
+			scene.rig.distance = 3.2
+			scene.rig.pitch = deg_to_rad(-8.0)
+			a.order_move(a.global_position + Vector3(-12, 0, 0))
+		if frame > 5:
+			scene.rig.focus(a.global_position + Vector3(0, 0.9, 0))
+			scene.rig.yaw = PI * 0.0
+		for i in 4:
+			if frame == 40 + i * 6:
+				_save("walk_%d" % i)
+		if frame == 66:
+			get_tree().quit()
 	elif plan == "model":
 		var a: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 0]
+		if frame == 2 and OS.get_environment("LM_MODEL") != "":
+			var lk: Dictionary = DataDB.heroes[a.data_id]["look"].duplicate()
+			lk["model"] = OS.get_environment("LM_MODEL")
+			lk["scale"] = 1.0
+			a.visual.build(lk)
+			a.visual.apply_equipment(a.equipment)
 		if frame == 5:
 			scene.rig.focus(a.global_position)
 			scene.rig._target_distance = 5.5
