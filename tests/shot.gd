@@ -175,6 +175,30 @@ func _process(_d: float) -> void:
 			_save("ui_wizard")
 			print(scene.hud.log_label.get_parsed_text())
 			get_tree().quit()
+	elif plan == "helms":
+		# close-ups of one item at a time on Aurelia: LM_ITEMS=slot:id,slot:id...
+		var list := OS.get_environment("LM_ITEMS").split(",")
+		var idx := int((frame - 10) / 12)
+		var u: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 0]
+		if frame >= 10 and (frame - 10) % 12 == 0 and idx < list.size():
+			scene.paused = false
+			var kv := list[idx].split(":")
+			u.equipment[kv[0]] = kv[1]
+			u.visual.apply_equipment(u.equipment)
+			u.visual.set_armed(true)
+			u._calm = -999.0
+			var s := float(DataDB.heroes[u.data_id]["look"].get("scale", 1.0))
+			var close := kv[0] == "head"
+			scene.rig.focus(u.global_position)
+			scene.rig.position.y = (1.55 if close else 1.0) * s - 0.8
+			scene.rig._target_distance = (1.1 if close else 2.6) * s + 0.4
+			scene.rig.distance = scene.rig._target_distance
+			scene.rig.pitch = deg_to_rad(-6.0)
+			scene.rig.yaw = u.rotation.y + PI + float(OS.get_environment("LM_YAWOFF") if OS.get_environment("LM_YAWOFF") != "" else "0.6")
+		if frame >= 10 and (frame - 10) % 12 == 10 and idx < list.size():
+			_save("it_%d" % idx)
+		if frame == 10 + 12 * list.size():
+			get_tree().quit()
 	elif plan == "gallery":
 		var combos := [
 			[0, {"main_hand": "longsword", "off_hand": "heater_shield", "head": "great_helm"}],

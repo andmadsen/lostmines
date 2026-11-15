@@ -126,9 +126,10 @@
       "reach": 1.8,
       "visual": {
         "mesh": "staff",
-        "length": 1.6,
+        "length": 1.7,
         "color": "#6a4a2a",
-        "glow": "#a98bff"
+        "glow": "#a98bff",
+        "model": "res://assets/gear/staff_wizard2.glb"
       }
     },
     {
@@ -275,7 +276,21 @@
       "ac": 0,
       "visual": {
         "mesh": "helm",
-        "color": "#9aa2aa"
+        "color": "#9aa2aa",
+        "model": "res://assets/gear/helm_nasal.glb",
+        "size": 0.31,
+        "offset": [
+          0,
+          0.02,
+          0
+        ],
+        "brightness": 1.5,
+        "metallic": 0.45,
+        "rotation": [
+          0,
+          -90,
+          0
+        ]
       }
     },
     {
@@ -348,8 +363,9 @@
       "reach": 24.0,
       "visual": {
         "model": "res://assets/gear/crossbow.glb",
-        "length": 0.75,
-        "sheathe": false
+        "length": 0.7,
+        "sheathe": false,
+        "hand": "left"
       }
     },
     {
@@ -435,7 +451,19 @@
       "type": "helmet",
       "visual": {
         "model": "res://assets/gear/helm_great.glb",
-        "size": 0.27
+        "size": 0.32,
+        "offset": [
+          0,
+          -0.025,
+          0
+        ],
+        "rotation": [
+          0,
+          90,
+          0
+        ],
+        "brightness": 1.6,
+        "metallic": 0.45
       }
     },
     {
@@ -444,7 +472,14 @@
       "type": "helmet",
       "visual": {
         "model": "res://assets/gear/helm_barbuta.glb",
-        "size": 0.26
+        "size": 0.3,
+        "offset": [
+          0,
+          0.03,
+          0
+        ],
+        "brightness": 1.6,
+        "metallic": 0.45
       }
     },
     {
@@ -453,7 +488,14 @@
       "type": "helmet",
       "visual": {
         "model": "res://assets/gear/helm_kettle.glb",
-        "size": 0.3
+        "size": 0.34,
+        "offset": [
+          0,
+          0.06,
+          0
+        ],
+        "brightness": 1.6,
+        "metallic": 0.45
       }
     },
     {
@@ -462,7 +504,14 @@
       "type": "helmet",
       "visual": {
         "model": "res://assets/gear/helm_winged.glb",
-        "size": 0.27
+        "size": 0.34,
+        "offset": [
+          0,
+          -0.015,
+          0
+        ],
+        "brightness": 1.5,
+        "metallic": 0.45
       }
     }
   ]

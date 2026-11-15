@@ -39,7 +39,11 @@
         "steel_shield",
         "torch",
         "zweihander",
-        "heater_shield"
+        "heater_shield",
+        "kite_shield",
+        "great_helm",
+        "winged_helm",
+        "barbuta"
       ],
       "background": "Soldier",
       "alignment": "Lawful Good",
@@ -103,7 +107,8 @@
       "inventory": [
         "shortsword",
         "dagger",
-        "falcata"
+        "falcata",
+        "light_crossbow"
       ],
       "speed": 2.6,
       "background": "Urchin",
@@ -144,7 +149,8 @@
       "inventory": [
         "iron_helm",
         "warhammer",
-        "lion_shield"
+        "lion_shield",
+        "kettle_hat"
       ],
       "spells": [
         "cure_wounds"
