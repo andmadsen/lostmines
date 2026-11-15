@@ -71,7 +71,7 @@ A dwarf is *not* a scaled-down human: get the stockiness from the macros
 | Aurelia (human fighter) | tall, steel chest, long sword, loose dark hair | steel grey, dark brown leather | warm bronze skin | `reference/Aurelia Dawnblade.png` |
 | Keldrin (dwarf cleric) | wide and low, huge red beard, pauldrons, long cream tabard | steel/bronze scale, dark leather | cream tabard with gold anvil of Moradin | `reference/Keldrin Ironfist.png` |
 | Pip (halfling rogue) | small, curly red-brown hair, green cape, quiver, bow | forest green cape, brown leather, linen | gold trim on the cape | `reference/Pip Swiftfoot.png` |
-| Shirvani (high elf wizard) | tall and slim, long white robe with draped hood, staff upright in the left hand | cream-white robe, blue stole | gold crescent and star | `reference/Shirvani Everglow.png` |
+| Shirvani (high elf wizard) | tall and slim, long white robe and mantle with gold borders, blue belt with spellbook, staff upright in the left hand | cream-white robe, blue stole | gold crescent and star | `reference/Shirvani Everglow.png` |
 
 No two heroes share a main colour. Gold is the "holy/arcane" accent (Keldrin,
 Shirvani); steel the martial one (Aurelia).
@@ -172,5 +172,9 @@ Test plans (`tests/shot.gd`): `gearclose` (close-up from four sides; `LM_HERO`,
   name can be part of another (`donitz_monk_robe` / `..._hood_down`).
 * Plain one-colour garments look dull: give them a `pattern`, gold `bands`
   at hem and cuffs and something at the waist (belt, book, pouches).
+* A long robe weighted to the legs splits between them and stretches in a
+  lunge; on pure spring bones the leg pokes through on long strides. Mix:
+  skirt chains with ~60 % of the leg weights kept (`keep`).
+* Belts and similar go UNDER a mantle or cape (`under`).
 * Hair with a near-black texture cannot be tinted; pick a light (blond/grey)
   hair and tint it.

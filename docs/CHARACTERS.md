@@ -158,6 +158,28 @@ lower back and legs so the cloth stays out of the body:
 Less `stiffness` = looser; more `drag` = calmer. Use no `flare` with bones -
 gravity decides how it falls. The same works for robes, tabard tails or hair.
 
+**Skirts and long robes.** On a `clothes` entry:
+
+    "skirt": {"bones": "skirt", "chains": 10, "segments": 4, "top": -0.04, "blend": 0.12,
+              "keep": 0.6, "inside": 0.01}
+
+A ring of `chains` bone chains is laid inside the garment from just below the
+hips (`top`, metres from the Hips joint) to the hem, and the cloth below is
+re-weighted onto them (blending in over `blend` metres). `keep` is the share
+that still follows the legs: 0 = pure physics (the leg pokes through on long
+strides), 0.6 = moves with the step but still swings and falls. In game:
+
+    "springs": [{"bones": "skirt", "stiffness": 0.8, "drag": 0.6, "gravity": 1.0, "radius": 0.04,
+                 "thigh_radius": 0.12, "shin_radius": 0.1, "hip_radius": 0.15}]
+
+The `*_radius` values size the body capsules for this cloth (bigger legs push
+the skirt clear of the knees). A panel lying on the skirt (Shirvani's stole)
+takes the skirt's weights below the hips with `"follow": "robe"`, and bands
+(gold hem) copy the weights of the garment, so everything moves together.
+Put trousers under a robe with slits, or the slits show bare legs.
+
+Several cloths can be simulated on one hero (Shirvani: `skirt` and `mantle`).
+
 ## 3c. Beards
 
     "beards": [{"id": "beard", "length": 0.3, "thickness": 0.05, "top": 0.03,

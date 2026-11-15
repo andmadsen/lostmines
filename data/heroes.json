@@ -535,9 +535,30 @@
           "hair": "#e8d39a"
         },
         "outfits_always": [
+          "pants",
           "boots",
           "stole",
-          "belt"
+          "belt",
+          "mantle"
+        ],
+        "springs": [
+          {
+            "bones": "skirt",
+            "stiffness": 0.8,
+            "drag": 0.6,
+            "gravity": 1.0,
+            "radius": 0.04,
+            "thigh_radius": 0.12,
+            "shin_radius": 0.1,
+            "hip_radius": 0.15
+          },
+          {
+            "bones": "mantle",
+            "stiffness": 0.6,
+            "drag": 0.5,
+            "gravity": 1.5,
+            "radius": 0.02
+          }
         ]
       },
       "equipment": {
@@ -585,6 +606,18 @@
         "hair": "elvs_keylth_hair",
         "clothes": [
           {
+            "id": "pants",
+            "asset": "rehmanpolanski_viking_pants",
+            "material": "cloth",
+            "color": [
+              0.16,
+              0.2,
+              0.42
+            ],
+            "tex_scale": 30,
+            "push": -0.01
+          },
+          {
             "id": "boots",
             "asset": "scailman_low-heeled_boots"
           },
@@ -596,7 +629,7 @@
               0.85,
               0.76
             ],
-            "push": 0.016,
+            "push": 0.022,
             "pattern": {
               "accent": [
                 0.8,
@@ -626,7 +659,16 @@
                 "height": 0.035,
                 "reach": 0.09
               }
-            ]
+            ],
+            "skirt": {
+              "bones": "skirt",
+              "chains": 10,
+              "segments": 4,
+              "top": -0.04,
+              "blend": 0.12,
+              "inside": 0.01,
+              "keep": 0.6
+            }
           }
         ],
         "outfits": [
@@ -658,7 +700,41 @@
             "emblem": "moon",
             "emblem_y": 0.45,
             "emblem_y2": null,
-            "legs": 0.9
+            "follow": "robe",
+            "follow_below": -0.04
+          },
+          {
+            "id": "mantle",
+            "sides": [
+              "back"
+            ],
+            "top": 0.95,
+            "bottom": -0.95,
+            "belt": 0.42,
+            "gap": 0.03,
+            "neck_width": 0.16,
+            "shoulder_drop": 0.1,
+            "width_top": 0.44,
+            "width_bottom": 0.6,
+            "columns": 31,
+            "folds": 7,
+            "fold_depth": 0.035,
+            "color": [
+              0.86,
+              0.83,
+              0.74
+            ],
+            "trim": [
+              0.8,
+              0.6,
+              0.24
+            ],
+            "border": 0.05,
+            "bones": {
+              "chains": 5,
+              "segments": 5,
+              "parent": "Spine2"
+            }
           }
         ],
         "props": [

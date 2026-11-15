@@ -1416,7 +1416,7 @@ def make_belt(body, spec, root):
     dg = bpy.context.evaluated_depsgraph_get()
     trees = [BVHTree.FromObject(o, dg) for o in [body] + ObjectService.get_list_of_children(root)
              if o.type == "MESH" and (o == body or o.name.startswith("outfit_")) and "hair" not in o.name.lower()
-             and not o.name.endswith("_trim")]
+             and not o.name.endswith("_trim") and not any(k in o.name for k in spec.get("under", ["mantle", "cape"]))]
     hips = _bone_head(rig, "Hips")
     z = hips.z + spec.get("up", 0.08)
     H = spec.get("height", 0.05)
@@ -1507,6 +1507,116 @@ def make_belt(body, spec, root):
     am.object = rig
     print("  belt:", ob.name, len(me.vertices), "verts")
     return ob
+
+
+# ---------------------------------------------------------------- skirts
+# A long garment below the hips hangs on a ring of bone chains (<id>_<chain>_<segment>,
+# parented to Hips) instead of following the legs; the game simulates them
+# (look.springs) with capsules around the legs, so the skirt swings and is
+# pushed by the knees instead of splitting between them.
+def make_skirt(body, root, cid, spec):
+    import mathutils
+    from mathutils.bvhtree import BVHTree
+    ob = next((o for o in ObjectService.get_list_of_children(root) if o.name == "outfit_" + cid), None)
+    if ob is None:
+        print("  ! skirt: no outfit", cid)
+        return None
+    rig = _rig_of(body)
+    dg = bpy.context.evaluated_depsgraph_get()
+    tree = BVHTree.FromObject(ob, dg)
+    hips = _bone_head(rig, "Hips")
+    verts = [ob.matrix_world @ v.co for v in ob.data.vertices]
+    z_top = hips.z + spec.get("top", -0.04)
+    z_hem = min(v.z for v in verts)
+    nch, nseg = spec.get("chains", 10), spec.get("segments", 4)
+    name = spec.get("bones", "skirt")
+    cy = hips.y
+
+    def outer(a, z):
+        d = mathutils.Vector((math.sin(a), -math.cos(a), 0))
+        hit = tree.ray_cast(mathutils.Vector((d.x * 0.7, cy + d.y * 0.7, z)), -d, 0.7)
+        return (0.7 - hit[3]) if hit[0] is not None else None
+    zj = [z_top + (z_hem - z_top) * k / nseg for k in range(nseg + 1)]
+    angles = [2 * math.pi * j / nch for j in range(nch)]
+    inv = rig.matrix_world.inverted()
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = rig
+    rig.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    ebs = rig.data.edit_bones
+    parent = ebs.get(B + "Hips")
+    for j, a in enumerate(angles):
+        pts = []
+        last = 0.12
+        for z in zj:
+            r = outer(a, z) or last
+            last = r
+            r = r - spec.get("inside", 0.03)   # bones run just inside the cloth
+            pts.append(mathutils.Vector((math.sin(a) * r, cy - math.cos(a) * r, z)))
+        prev = parent
+        for k in range(nseg):
+            bone = ebs.new(f"{name}_{j}_{k}")
+            bone.head = inv @ pts[k]
+            bone.tail = inv @ pts[k + 1]
+            bone.parent = prev
+            bone.use_connect = k > 0
+            prev = bone
+    bpy.ops.object.mode_set(mode="OBJECT")
+    # re-weight the cloth below the hips onto the chains, blending in over `blend`
+    blend = spec.get("blend", 0.1)
+    names = {g.index: g.name for g in ob.vertex_groups}
+    groups = {g.name: g for g in ob.vertex_groups}
+    moved = 0
+    for v, co in zip(ob.data.vertices, verts):
+        if co.z >= z_top:
+            continue
+        w = min(1.0, (z_top - co.z) / blend) * (1.0 - spec.get("keep", 0.0))   # keep: share that still follows the legs
+        old = {names[g.group]: g.weight for g in v.groups if g.group in names}
+        new = {k2: wt * (1 - w) for k2, wt in old.items()}
+        a = math.atan2(co.x, -(co.y - cy)) % (2 * math.pi)
+        f = a / (2 * math.pi) * nch
+        j0 = int(f) % nch
+        j1 = (j0 + 1) % nch
+        t = f - int(f)
+        k = 0
+        while k < nseg - 1 and co.z < zj[k + 1]:
+            k += 1
+        for jj, ww in ((j0, 1 - t), (j1, t)):
+            bn = f"{name}_{jj}_{k}"
+            new[bn] = new.get(bn, 0.0) + w * ww
+        for gname in old:
+            groups[gname].remove([v.index])
+        for gname, wt in new.items():
+            if wt < 1e-4:
+                continue
+            if gname not in groups:
+                groups[gname] = ob.vertex_groups.new(name=gname)
+            groups[gname].add([v.index], wt, "REPLACE")
+        moved += 1
+    print("  skirt:", ob.name, nch, "chains,", moved, "verts on them")
+    return ob
+
+
+def follow_weights(obj, src, below_z):
+    """Below a height, a panel takes the weights of the nearest vertex of
+    another garment (a stole moving with the skirt it lies on)."""
+    from mathutils.kdtree import KDTree
+    kd = KDTree(len(src.data.vertices))
+    for i, v in enumerate(src.data.vertices):
+        kd.insert(src.matrix_world @ v.co, i)
+    kd.balance()
+    names = {g.index: g.name for g in src.vertex_groups}
+    for v in obj.data.vertices:
+        co = obj.matrix_world @ v.co
+        if co.z >= below_z:
+            continue
+        for g in list(v.groups):
+            obj.vertex_groups[g.group].remove([v.index])
+        _, si, _ = kd.find(co)
+        for g in src.data.vertices[si].groups:
+            if g.group in names and g.weight > 1e-4:
+                tg = obj.vertex_groups.get(names[g.group]) or obj.vertex_groups.new(name=names[g.group])
+                tg.add([v.index], g.weight, "REPLACE")
 
 
 def build(hero_id, out_path=None):
@@ -1608,8 +1718,17 @@ def build(hero_id, out_path=None):
         fit_armour(eb, spec)
     for spec in body.get("rigid", []):
         fit_rigid(eb, spec)
+    for c in body.get("clothes", []):
+        if isinstance(c, dict) and c.get("skirt"):
+            make_skirt(eb, root, c["id"], c["skirt"])
     for spec in body.get("panels", []):
-        make_panel(eb, spec, root)
+        made = make_panel(eb, spec, root)
+        if spec.get("follow"):   # e.g. a stole moves with the skirt below the belt
+            src = next((o for o in ObjectService.get_list_of_children(root) if o.name == "outfit_" + spec["follow"]), None)
+            if src:
+                z = _bone_head(_rig_of(eb), "Hips").z + spec.get("follow_below", -0.04)
+                for m in made:
+                    follow_weights(m, src, z)
     for spec in body.get("beards", []):
         make_beard(eb, spec, root)
     for c in body.get("clothes", []):

@@ -206,10 +206,13 @@ func _add_springs(skel: Skeleton3D, sp: Dictionary) -> void:
 		sim.set_radius(i, float(sp.get("radius", 0.02)))
 		sim.set_enable_all_child_collisions(i, true)
 	# the body the cloth must not pass through
-	var hips_w := 0.17
+	# sizes can grow per cloth: a skirt must be pushed well clear of the knees
+	var hips_w := float(sp.get("hip_radius", 0.17))
+	var thigh := float(sp.get("thigh_radius", 0.085))
+	var shin := float(sp.get("shin_radius", 0.065))
 	for b in [["mixamorig_Hips", hips_w, 0.36, true], ["mixamorig_Spine", 0.15, 0.34, true],
-			["mixamorig_LeftUpLeg", 0.085, 0.0, false], ["mixamorig_RightUpLeg", 0.085, 0.0, false],
-			["mixamorig_LeftLeg", 0.065, 0.0, false], ["mixamorig_RightLeg", 0.065, 0.0, false]]:
+			["mixamorig_LeftUpLeg", thigh, 0.0, false], ["mixamorig_RightUpLeg", thigh, 0.0, false],
+			["mixamorig_LeftLeg", shin, 0.0, false], ["mixamorig_RightLeg", shin, 0.0, false]]:
 		var bi := skel.find_bone(str(b[0]))
 		if bi < 0:
 			continue
