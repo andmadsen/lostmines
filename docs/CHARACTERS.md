@@ -4,6 +4,21 @@ This is the recipe for building heroes and their equipment, so the next hero,
 armour or helmet is made the same way. Everything is driven by the JSON files
 in `data/`; the tools in `tools/` turn those recipes into models.
 
+## 0. Folder structure (`assets/`, not in git)
+
+    animations/   onehand, onehand_shield_pack, twohand_pack, bow, bow_pack,
+                  spell_pack, heal          (Mixamo, "Without Skin")
+    characters/   <hero>.fbx (Mixamo) or <hero>_mh.glb (built by tools/build_hero.py)
+                  + the textures Godot extracts from them (keep them)
+    monsters/     <monster>/  model, textures/, license.txt
+    weapons/      older hand-picked weapons, one folder each (scene.gltf ...)
+    gear/         Sketchfab library: armour, helmets, weapons, shields (.glb) + license.txt
+    textures/     cave_wall, cave_floor (Poly Haven)
+    _unused/      no longer used; ignored by Godot (.gdignore) - safe to delete
+
+Monsters with weapons use the same animation sets as heroes
+(`look.animation_set: "auto"`).
+
 ## 1. Overview
 
 | Layer | Where it comes from | How it follows the body | Example |

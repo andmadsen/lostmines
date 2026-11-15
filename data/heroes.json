@@ -22,7 +22,6 @@
         "width": 1.0,
         "model": "res://assets/characters/aurelia_mh.glb",
         "animation_set": "auto",
-        "model_old": "res://assets/characters/aurelia.fbx",
         "tints": {
           "hair": "#4a2e1c",
           "tunic_mail": 1.5,
