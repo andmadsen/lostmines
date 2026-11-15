@@ -72,6 +72,7 @@ func _process(_d: float) -> void:
 				k.visual.set_armed(true)
 				k._calm = -999.0
 			scene.rig.focus(k.global_position + Vector3(0, float(OS.get_environment("LM_FOCUSY")) if OS.get_environment("LM_FOCUSY") != "" else 0.6, 0))
+			scene.rig.position.y = (float(OS.get_environment("LM_FOCUSY")) if OS.get_environment("LM_FOCUSY") != "" else 0.6) - 0.8
 			var dist := float(OS.get_environment("LM_DIST")) if OS.get_environment("LM_DIST") != "" else 2.6
 			scene.rig._target_distance = dist
 			scene.rig.distance = dist

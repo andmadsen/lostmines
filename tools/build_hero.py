@@ -330,6 +330,50 @@ def _snap_to_helpers(body, root):
                         brow_d = d
 
 
+# ---------------------------------------------------------------- hidden skin
+# Each MakeHuman garment knows which skin it covers (vertex group
+# "Delete.<asset>"). The skin is not deleted - the hero may take the garment
+# off - but split into pieces named body_hide_<id>+<id>; the game hides a
+# piece while any of those outfits is worn, so feet never poke through boots.
+def split_body_by_clothes(body, clothes):
+    import bmesh
+    ids = {}
+    for c in clothes:
+        if isinstance(c, dict):
+            g = body.vertex_groups.get("Delete." + c["asset"])
+            if g:
+                ids[g.index] = c["id"]
+    if not ids:
+        return
+    done = set()
+    while True:
+        covered = [frozenset(ids[g.group] for g in v.groups if g.group in ids and g.weight > 0.5) for v in body.data.vertices]
+        sets = {}
+        for f in body.data.polygons:
+            common = frozenset.intersection(*[covered[i] for i in f.vertices])
+            if common and common not in done:
+                sets.setdefault(common, []).append(f.index)
+        if not sets:
+            break
+        key, faces = next(iter(sets.items()))
+        done.add(key)
+        bpy.ops.object.select_all(action="DESELECT")
+        bpy.context.view_layer.objects.active = body
+        body.select_set(True)
+        for p in body.data.polygons:
+            p.select = False
+        for fi in faces:
+            body.data.polygons[fi].select = True
+        before = set(bpy.data.objects)
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_mode(type="FACE")
+        bpy.ops.mesh.separate(type="SELECTED")
+        bpy.ops.object.mode_set(mode="OBJECT")
+        for o in set(bpy.data.objects) - before:
+            o.name = "body_hide_" + "+".join(sorted(key))
+            print("  skin piece:", o.name, len(o.data.polygons), "faces")
+
+
 # ---------------------------------------------------------------- rigid armour
 # Plates (cuirass, pauldrons, bracers...) are stiff: each piece is fitted to
 # the body once and then follows ONE bone 100%, so it never bends or drifts.
@@ -530,6 +574,9 @@ def build(hero_id, out_path=None):
         for o in ObjectService.get_list_of_children(root):
             if o.type == "MESH" and c["asset"] in o.name:
                 o.name = "outfit_" + c["id"]
+                if c.get("push"):  # lift a layer off the one beneath (boots over trousers)
+                    for v in o.data.vertices:
+                        v.co += v.normal * c["push"]
                 print("  clothes:", o.name)
     ExportService.bake_modifiers_remove_helpers(eb, bake_masks=True, bake_subdiv=True, remove_helpers=True, also_proxy=True)
     # freeze the body shape (macro shape keys) so every engine shows it as built
@@ -541,6 +588,7 @@ def build(hero_id, out_path=None):
             v.co = c
         print("  froze body shape keys")
     make_outfits(eb, body.get("outfits", ["under_top", "under_legs", "boots", "gloves"]))
+    split_body_by_clothes(eb, body.get("clothes", []))
     for spec in body.get("armour", []):
         fit_armour(eb, spec)
     for spec in body.get("rigid", []):

@@ -231,6 +231,13 @@ func _show_outfits(equipment: Dictionary) -> void:
 		on.append_array(it.get("visual", {}).get("outfits", []))
 	for m in meshes:
 		(m as Node3D).visible = str(m.name).trim_prefix("outfit_") in on
+	# skin under worn clothes is hidden (body_hide_boots+pants...)
+	for m in model.find_children("body_hide_*", "MeshInstance3D", true, false):
+		var hide := false
+		for id in str(m.name).trim_prefix("body_hide_").split("+"):
+			if id in on:
+				hide = true
+		(m as Node3D).visible = not hide
 
 
 ## Tints parts of a model by name, e.g. look.tints = {"hair": "#5a3a24"}.

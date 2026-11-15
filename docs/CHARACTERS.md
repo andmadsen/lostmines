@@ -37,7 +37,7 @@ It reads `heroes.json -> heroes[aurelia].body` and writes
 | `race` | `{"african": .., "asian": .., "caucasian": ..}` |
 | `skin` | a skin from the skins packs, e.g. `toigo_light_skin_female_bronze` |
 | `eyes, eyebrows, eyelashes, teeth, tongue, hair` | MakeHuman asset names, e.g. `low-poly`, `elvs_daisy_hair` |
-| `clothes` | list of `{"id": "<outfit name>", "asset": "<mhclo name>"}` |
+| `clothes` | list of `{"id": "<outfit name>", "asset": "<mhclo name>", "push": metres}`; `push` lifts a layer off the one beneath (e.g. boots over trousers, 0.004) |
 | `outfits` | generated cloth layers (`under_top`, `under_legs`, `boots`, `gloves`, `leather`, `chain`) - fallback only |
 | `rigid` | rigid armour pieces, see section 3 |
 
@@ -45,6 +45,8 @@ What the builder does, in order:
 1. creates the human from the macros, sets the skin, adds the **mixamo** rig;
 2. adds eyes, brows, lashes, teeth, tongue, hair and every `clothes` entry;
 3. removes MakeHuman's skin-hiding masks (clothes can be taken off in game);
+   instead the skin each garment covers is split off as `body_hide_<id>` and the
+   game hides it while that garment is worn (no toes through boots);
 4. makes an export copy, snaps eyes/lashes to the final face, freezes the body
    shape (shape keys applied) so Godot shows exactly what Blender built;
 5. renames each clothing mesh to `outfit_<id>`, builds rigid pieces
@@ -118,7 +120,18 @@ Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 * Mixamo animations: "Without Skin", "In Place"; they play on MakeHuman heroes
   through `scripts/game/retarget.gd` (A-pose vs T-pose handled automatically).
 
-## 7. Known limits
+## 7. Lessons learned
+
+* Pick clothes made to be worn together (the `rehmanpolanski_viking_*` tunic,
+  trousers and boots fit each other). Mixing packs gives z-fighting where
+  layers overlap; `push` helps a little.
+* Check the texture before choosing a garment: some are black (punkduck riding
+  boots) and disappear in the cave light.
+* Dark textures can be lifted with a numeric tint (`"tunic_mail": 1.5`); above
+  ~2 colours drift (blue sleeves).
+* Low-res or odd-coloured armour textures: use `material: "steel"`.
+
+## 8. Known limits
 
 * MakeHuman hair has see-through strands in some lights.
 * Helmets do not hide hair yet (hair mesh should be hidden when a helmet is on).

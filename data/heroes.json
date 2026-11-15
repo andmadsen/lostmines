@@ -25,12 +25,12 @@
         "model_old": "res://assets/characters/aurelia.fbx",
         "tints": {
           "hair": "#4a2e1c",
-          "tunic_mail": 2.2,
-          "pants": 1.6
+          "tunic_mail": 1.5,
+          "pants": 1.4
         },
         "outfits_always": [
           "pants",
-          "boots_riding"
+          "boots"
         ]
       },
       "equipment": {
@@ -88,8 +88,9 @@
             "asset": "rehmanpolanski_viking_pants"
           },
           {
-            "id": "boots_riding",
-            "asset": "punkduck_riding_boots"
+            "id": "boots",
+            "asset": "rehmanpolanski_viking_boots",
+            "push": 0.004
           },
           {
             "id": "tunic_mail",
@@ -111,7 +112,7 @@
             "file": "armor_avacynian.glb",
             "fit": "torso",
             "turn": -90,
-            "scale": 1.5,
+            "scale": 1.42,
             "up": -0.06,
             "grow": false,
             "material": "steel",
