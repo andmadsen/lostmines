@@ -132,12 +132,14 @@ Capes use the same generator with `"sides": ["back"]` and a shaped top:
 `neck_width` (width at the neck), `shoulder_drop` (how far down the shoulders
 widen to `width_top`), `width_bottom` (flare at the hem), `columns` (more for
 folds), `folds` + `fold_depth` (soft vertical folds deepening to the hem),
-`belt` (metres above the hips where it starts to hang straight), `legs` (how
-much the hem follows the thighs). Pip:
+`belt` (metres above the hips where it starts to hang straight; higher =
+looser over the back), `flare` (metres the hem falls away from the body),
+`gap`, `legs` (how much the hem follows the thighs). Pip:
 
-    {"id": "cape", "sides": ["back"], "top": 0.95, "bottom": -0.35, "belt": 0.32,
+    {"id": "cape", "sides": ["back"], "top": 0.95, "bottom": -0.35,
      "neck_width": 0.14, "shoulder_drop": 0.09, "width_top": 0.34, "width_bottom": 0.44,
-     "columns": 25, "folds": 5, "fold_depth": 0.03, "legs": 0.25,
+     "belt": 0.42, "gap": 0.025, "flare": 0.07,
+     "columns": 31, "folds": 6, "fold_depth": 0.04, "legs": 0.25,
      "color": [0.22, 0.31, 0.15], "trim": [0.62, 0.47, 0.17], "border": 0.05}
 
 ## 3c. Beards
@@ -164,7 +166,9 @@ A leather quiver with arrows on the back (on top of a cape), slanted by `tilt`
 degrees (negative: top over the right shoulder), rigid on Spine2.
 
 Generated outfits (`under_top`, `leather`, `chain`, `plate`) are smoothed so
-they do not follow every curve of the body (`SMOOTH` in `build_hero.py`).
+they do not follow every curve of the body (`SMOOTH` in `build_hero.py`), and
+their edges (neckline, armholes, hem) are trimmed and relaxed into smooth
+lines (`_smooth_edges`) - cut by bone they would zigzag.
 
 ## 4. Equipment shows outfits (`data/items.json`)
 

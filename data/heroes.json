@@ -254,10 +254,10 @@
             ],
             "top": 0.95,
             "bottom": -0.35,
-            "belt": 0.32,
+            "belt": 0.42,
             "width_top": 0.34,
             "width_bottom": 0.44,
-            "gap": 0.015,
+            "gap": 0.025,
             "legs": 0.25,
             "color": [
               0.22,
@@ -270,11 +270,12 @@
               0.17
             ],
             "border": 0.05,
-            "columns": 25,
-            "folds": 5,
-            "fold_depth": 0.03,
+            "columns": 31,
+            "folds": 6,
+            "fold_depth": 0.04,
             "neck_width": 0.14,
-            "shoulder_drop": 0.09
+            "shoulder_drop": 0.09,
+            "flare": 0.07
           }
         ],
         "props": [

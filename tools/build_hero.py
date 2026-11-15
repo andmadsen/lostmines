@@ -69,7 +69,7 @@ OUTFITS = {
 }
 
 
-SMOOTH = {"leather": 8, "chain": 6, "under_top": 3, "plate": 6}
+SMOOTH = {"leather": 14, "chain": 8, "under_top": 4, "plate": 8}
 
 
 def _material(kind, colour):
@@ -138,6 +138,30 @@ def _keep(dom, co, parts, ranges):
     return False
 
 
+def _smooth_edges(bm, trims=3, passes=12):
+    """Cut by bone, a garment's edge zigzags. Shave off the teeth (faces that
+    hang on by one edge) and relax the edge line so necklines, armholes and
+    hems run smoothly."""
+    import bmesh
+    for _ in range(trims):
+        teeth = [f for f in bm.faces if sum(1 for e in f.edges if e.is_boundary or len(e.link_faces) == 1) >= 2]
+        if not teeth:
+            break
+        bmesh.ops.delete(bm, geom=teeth, context="FACES")
+        for v in [v for v in bm.verts if not v.link_faces]:
+            bm.verts.remove(v)
+    for _ in range(passes):
+        moves = {}
+        for v in bm.verts:
+            if not v.is_boundary:
+                continue
+            nb = [e.other_vert(v) for e in v.link_edges if e.is_boundary]
+            if len(nb) == 2:
+                moves[v] = (nb[0].co + nb[1].co) / 2
+        for v, target in moves.items():
+            v.co = v.co.lerp(target, 0.5)
+
+
 def make_outfits(body, wanted):
     import bmesh
     dom = _dominant_bones(body)
@@ -170,6 +194,7 @@ def make_outfits(body, wanted):
         # loose bits (single stray triangles) go away
         for v in [v for v in bm.verts if len(v.link_faces) == 0]:
             bm.verts.remove(v)
+        _smooth_edges(bm)
         bm.normal_update()
         for v in bm.verts:
             v.co += v.normal * push
@@ -731,6 +756,13 @@ def make_panel(body, spec, root):
                 for c in range(cols):
                     x, y, zz = grid[r][c]
                     grid[r][c] = (x, y + side * depth * (0.5 + 0.5 * math.sin(c / (cols - 1) * folds * 2 * math.pi)), zz)
+        flare = spec.get("flare", 0.0)
+        if flare:   # loose cloth: falls away from the back towards the hem
+            for r in range(rows):
+                t = max(0.0, min(1.0, (top - zs[r]) / max(0.01, top - bottom)))
+                for c in range(cols):
+                    x, y, zz = grid[r][c]
+                    grid[r][c] = (x, y + side * flare * t ** 1.5, zz)
         me = bpy.data.meshes.new("panel")
         bm = bmesh.new()
         vs = [[bm.verts.new((x, y + side * gap, z)) for (x, y, z) in row] for row in grid]
@@ -763,6 +795,8 @@ def make_panel(body, spec, root):
         img.image.pack()
         nt.links.new(img.outputs["Color"], bsdf.inputs["Base Color"])
         me.materials.append(m)
+        for f in me.polygons:   # soft shading over the folds
+            f.use_smooth = True
         sol = ob.modifiers.new("thick", "SOLIDIFY")
         sol.thickness = spec.get("thickness", 0.004)
         sol.offset = 0.0
