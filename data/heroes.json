@@ -109,6 +109,27 @@
         "rigid": [
           {
             "id": "cuirass",
+            "file": "armor_noble_knight.glb",
+            "keep": [
+              "chestplate",
+              "plate_belt",
+              "belt_iron"
+            ],
+            "fit": "chest",
+            "scale": 1.4,
+            "grow": false,
+            "material": "steel",
+            "color": [
+              0.8,
+              0.82,
+              0.86
+            ],
+            "up": 0.05,
+            "forward": 0.02,
+            "depth": 1.15
+          },
+          {
+            "id": "pauldrons",
             "file": "armor_avacynian.glb",
             "fit": "torso",
             "turn": -90,
@@ -120,7 +141,8 @@
               0.8,
               0.82,
               0.86
-            ]
+            ],
+            "shoulders_only": true
           }
         ]
       }

@@ -379,11 +379,12 @@ def split_body_by_clothes(body, clothes):
 # the body once and then follows ONE bone 100%, so it never bends or drifts.
 # spec: {"id": outfit name, "file": gear glb, "fit": "chest"|"shoulders",
 #        "scale": extra size, "up": metres, "forward": metres, "drop": [names]}
-def _import_joined(path, drop=()):
+def _import_joined(path, drop=(), keep=()):
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=path)
     new = [o for o in bpy.data.objects if o not in before]
-    meshes = [o for o in new if o.type == "MESH" and not any(x in o.name for x in drop)]
+    meshes = [o for o in new if o.type == "MESH" and not any(x in o.name for x in drop)
+              and (not keep or any(x in o.name for x in keep))]
     others = [o.name for o in new if o not in meshes]
     bpy.ops.object.select_all(action="DESELECT")
     for o in meshes:
@@ -459,7 +460,7 @@ def _weight_to(piece, rig, chooser):
 def fit_rigid(body, spec):
     import mathutils
     rig = _rig_of(body)
-    ob = _import_joined(os.path.join(ROOT, "assets", "gear", spec["file"]), spec.get("drop", []))
+    ob = _import_joined(os.path.join(ROOT, "assets", "gear", spec["file"]), spec.get("drop", []), spec.get("keep", []))
     ob.name = "outfit_" + spec["id"]
     ob.data.name = ob.name
     vs = ob.data.vertices
@@ -493,8 +494,11 @@ def fit_rigid(body, spec):
         anchor = mathutils.Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, hi.z))
         target = mathutils.Vector((neck.x, (la.y + ra.y) / 2, neck.z + 0.06))
     target += mathutils.Vector((0, -spec.get("forward", 0.0), spec.get("up", 0.0)))
+    dscale = spec.get("depth", 1.0)   # extra front-to-back size (room for the chest)
     for v in vs:
-        v.co = target + (v.co - anchor) * s
+        d = (v.co - anchor) * s
+        d.y *= dscale
+        v.co = target + d
     ob.data.update()
     pts = _body_points(body, TORSO if spec["fit"] in ("chest", "torso") else SHOULDER)
     centre = sum((p for p, _ in pts), mathutils.Vector()) / len(pts) if spec["fit"] != "shoulders" else target
@@ -512,6 +516,17 @@ def fit_rigid(body, spec):
                 return "Hips"
             return "Spine2" if co.z > spine2 - 0.04 else "Spine1"
         _weight_to(ob, rig, pick)
+        if spec.get("shoulders_only"):
+            import bmesh
+            bm = bmesh.new()
+            bm.from_mesh(ob.data)
+            bm.verts.ensure_lookup_table()
+            keep_groups = {ob.vertex_groups[B + n].index for n in ("LeftShoulder", "RightShoulder") if B + n in ob.vertex_groups}
+            dl = bm.verts.layers.deform.active
+            drop = [v for v in bm.verts if not any(g in keep_groups for g in v[dl].keys())]
+            bmesh.ops.delete(bm, geom=drop, context="VERTS")
+            bm.to_mesh(ob.data)
+            bm.free()
     elif spec["fit"] == "chest":
         chest_z = _bone_head(rig, "Spine1").z
         _weight_to(ob, rig, lambda co: "Spine2" if co.z > chest_z else "Spine1")

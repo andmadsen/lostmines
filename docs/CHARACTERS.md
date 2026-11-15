@@ -74,7 +74,9 @@ A `rigid` entry:
 | `up`, `forward` | metres to move it after fitting |
 | `grow` | `true` = enlarge step by step until the body no longer pokes through (works for closed shells; switch off for pieces with open sides) |
 | `material`, `color` | replace the model's own material with the project's `steel`/`leather`/`chain`/`cloth` look (use when the model's texture is low-res or off-colour) |
-| `drop` | mesh names in the file to leave out |
+| `drop` / `keep` | mesh names in the file to leave out / to use only (e.g. take just the `chestplate` of a full armour suit) |
+| `depth` | extra front-to-back size, room for the chest (1.15) |
+| `shoulders_only` | with `fit: torso`: keep only the pauldron parts of a cuirass |
 
 Bone assignment (`fit: torso`): pauldron parts -> `LeftShoulder`/`RightShoulder`,
 chest -> `Spine2`, middle -> `Spine1`, belt -> `Hips`. Each vertex follows one bone
@@ -130,6 +132,12 @@ Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 * Dark textures can be lifted with a numeric tint (`"tunic_mail": 1.5`); above
   ~2 colours drift (blue sleeves).
 * Low-res or odd-coloured armour textures: use `material: "steel"`.
+
+* Aurelia's plate: the feminine chestplate (`keep: chestplate`) of "Female Noble
+  Knight Armor" + the pauldrons of "Avacynian Knight Armor" (`shoulders_only`).
+* Feet on the floor: `retarget.gd` shifts the hips per animation so the lowest
+  foot stays as high above the floor as in the Mixamo source (bodies with other
+  leg proportions sank ~8 cm before).
 
 ## 8. Known limits
 
