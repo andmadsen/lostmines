@@ -125,6 +125,10 @@ Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 
 ## 7. Lessons learned
 
+* Spikes from hands/feet: MakeHuman sometimes gives a few clothing vertices a
+  little weight on a far bone (a glove vertex on the shoulder). The builder
+  removes influences more than 0.3 m from their bone (`clean_weights`, hair is
+  skipped), keeps 4 per vertex and renormalises.
 * Pick clothes made to be worn together (the `rehmanpolanski_viking_*` tunic,
   trousers and boots fit each other). Mixing packs gives z-fighting where
   layers overlap; `push` helps a little.

@@ -200,6 +200,46 @@ func _process(_d: float) -> void:
 			_save("it_%d" % idx)
 		if frame == 10 + 12 * list.size():
 			get_tree().quit()
+	elif plan == "hidetest":
+		var u: Unit = scene.party[0]
+		var ms: Array = u.visual.model.find_children("*", "MeshInstance3D", true, false).filter(func(m): return m.visible)
+		if frame == 20:
+			scene.paused = false
+			scene.rig.focus(u.global_position)
+			scene.rig.position.y = 0.1
+			scene.rig._target_distance = 2.4
+			scene.rig.distance = 2.4
+			scene.rig.pitch = deg_to_rad(-35.0)
+			scene.rig.yaw = u.rotation.y + float(OS.get_environment("LM_YAW2") if OS.get_environment("LM_YAW2") != "" else "3.0")
+			for o in scene.party:
+				if o != u: o.visible = false
+			if OS.get_environment("LM_NOSHADOW") != "":
+				for g in u.visual.back_slot.find_children("*", "GeometryInstance3D", true, false):
+					g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			for e in scene.units:
+				if e.is_monster: e.visible = false
+			set_meta("ms", ms)
+			print("meshes ", ms.map(func(m): return m.name))
+		var all: Array = get_meta("ms", [])
+		var i := int((frame - 30) / 6)
+		if frame >= 30 and (frame - 30) % 6 == 0 and i <= all.size():
+			for k in all.size():
+				all[k].visible = k != i - 1
+		if frame >= 30 and (frame - 30) % 6 == 4 and i <= all.size():
+			_save("hide_%d" % i)
+		if frame == 30 + 6 * (all.size() + 1) and frame > 30:
+			get_tree().quit()
+	elif plan == "slots":
+		if frame == 30:
+			var u: Unit = scene.party[0]
+			print("equip ", u.equipment)
+			for slot in [u.visual.hand_r, u.visual.hand_l, u.visual.hip_slot, u.visual.back_slot, u.visual.head_slot, u.visual.extras]:
+				if slot:
+					print("slot ", slot.name, " -> ", slot.get_children().map(func(c): return str(c.name) + "(" + str(c.find_children("*", "MeshInstance3D", true, false).size()) + ")"))
+			for m in u.find_children("*", "GeometryInstance3D", true, false):
+				if m.is_visible_in_tree() and not u.visual.model.is_ancestor_of(m):
+					print("visible mesh ", m.name, " ", m.get_class(), " path ", u.get_path_to(m))
+			get_tree().quit()
 	elif plan == "gallery":
 		var combos := [
 			[0, {"main_hand": "longsword", "off_hand": "heater_shield", "head": "great_helm"}],

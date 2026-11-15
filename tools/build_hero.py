@@ -292,6 +292,37 @@ def fit_armour(body, spec):
     return ob
 
 
+def clean_weights(obj, rig, max_dist=0.3):
+    """Drop bone influences that are far from the vertex (MakeHuman sometimes
+    gives a glove vertex a little shoulder weight: in game that stretches
+    into long spikes), keep at most 4 per vertex and renormalise."""
+    from mathutils.geometry import intersect_point_line
+    segs = {}
+    for b in rig.data.bones:
+        segs[b.name] = (rig.matrix_world @ b.head_local, rig.matrix_world @ b.tail_local)
+    names = {g.index: g.name for g in obj.vertex_groups}
+    removed = 0
+    for v in obj.data.vertices:
+        co = obj.matrix_world @ v.co
+        for g in list(v.groups):
+            seg = segs.get(names[g.group])
+            if seg is None or g.weight < 1e-4:
+                continue
+            pt, t = intersect_point_line(co, seg[0], seg[1])
+            t = max(0.0, min(1.0, t))
+            d = (co - (seg[0] + (seg[1] - seg[0]) * t)).length
+            if d > max_dist:
+                obj.vertex_groups[g.group].remove([v.index])
+                removed += 1
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.vertex_group_limit_total(group_select_mode="BONE_DEFORM", limit=4)
+    bpy.ops.object.vertex_group_normalize_all(group_select_mode="BONE_DEFORM", lock_active=False)
+    if removed:
+        print(f"  cleaned {obj.name}: {removed} far influences")
+
+
 def _snap_to_helpers(body, root):
     """Eyes, brows and lashes are fitted to the base shape; move each so it
     sits on its helper geometry in the final (macro-shaped) body."""
@@ -623,6 +654,10 @@ def build(hero_id, out_path=None):
             v.co = c
         print("  froze body shape keys")
     make_outfits(eb, body.get("outfits", ["under_top", "under_legs", "boots", "gloves"]))
+    rig_obj = _rig_of(eb)
+    for o in ObjectService.get_list_of_children(root):
+        if o.type == "MESH" and o.vertex_groups and "hair" not in o.name:
+            clean_weights(o, rig_obj)
     split_body_by_clothes(eb, body.get("clothes", []))
     for spec in body.get("armour", []):
         fit_armour(eb, spec)
