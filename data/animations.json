@@ -319,6 +319,384 @@
           ]
         }
       }
+    },
+    {
+      "id": "one_hand",
+      "idle": "res://assets/animations/onehand/standing idle.fbx",
+      "walk": "res://assets/animations/onehand/standing walk forward.fbx",
+      "attack": [
+        "res://assets/animations/onehand/standing melee attack downward.fbx",
+        "res://assets/animations/onehand/standing melee attack horizontal.fbx",
+        "res://assets/animations/onehand/standing melee attack backhand.fbx"
+      ],
+      "death": "res://assets/animations/twohand_pack/two handed sword death.fbx",
+      "cast": "res://assets/animations/heal/heal.fbx",
+      "attack_speed": 1.5,
+      "grip": {
+        "right": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            -90
+          ]
+        },
+        "left": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            0.1,
+            0.02
+          ],
+          "rotation": [
+            0,
+            180,
+            0
+          ]
+        },
+        "back": {
+          "position": [
+            -0.09,
+            0.27,
+            -0.17
+          ],
+          "rotation": [
+            0,
+            0,
+            200
+          ]
+        },
+        "shield": {
+          "position": [
+            -0.12,
+            0.12,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "one_hand_shield",
+      "idle": "res://assets/animations/onehand_shield_pack/sword and shield idle.fbx",
+      "walk": "res://assets/animations/onehand/standing walk forward.fbx",
+      "attack": [
+        "res://assets/animations/onehand_shield_pack/sword and shield attack.fbx",
+        "res://assets/animations/onehand_shield_pack/sword and shield attack (2).fbx",
+        "res://assets/animations/onehand_shield_pack/sword and shield attack (3).fbx"
+      ],
+      "death": "res://assets/animations/onehand_shield_pack/sword and shield death.fbx",
+      "cast": "res://assets/animations/heal/heal.fbx",
+      "attack_speed": 1.3,
+      "grip": {
+        "right": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            -90
+          ]
+        },
+        "left": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            0.1,
+            0.02
+          ],
+          "rotation": [
+            0,
+            180,
+            0
+          ]
+        },
+        "back": {
+          "position": [
+            -0.09,
+            0.27,
+            -0.17
+          ],
+          "rotation": [
+            0,
+            0,
+            200
+          ]
+        },
+        "shield": {
+          "position": [
+            -0.12,
+            0.12,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "two_hand",
+      "idle": "res://assets/animations/twohand_pack/great sword idle.fbx",
+      "walk": "res://assets/animations/twohand_pack/great sword walk.fbx",
+      "attack": [
+        "res://assets/animations/twohand_pack/great sword slash.fbx",
+        "res://assets/animations/twohand_pack/great sword attack.fbx"
+      ],
+      "death": "res://assets/animations/twohand_pack/two handed sword death.fbx",
+      "cast": "res://assets/animations/heal/heal.fbx",
+      "attack_speed": 1.1,
+      "grip": {
+        "right": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            -90
+          ]
+        },
+        "left": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            0.1,
+            0.02
+          ],
+          "rotation": [
+            0,
+            180,
+            0
+          ]
+        },
+        "back": {
+          "position": [
+            -0.09,
+            0.27,
+            -0.17
+          ],
+          "rotation": [
+            0,
+            0,
+            200
+          ]
+        },
+        "shield": {
+          "position": [
+            -0.12,
+            0.12,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "unarmed",
+      "idle": "res://assets/animations/onehand/unarmed idle.fbx",
+      "walk": "res://assets/animations/onehand/unarmed walk forward.fbx",
+      "attack": [
+        "res://assets/animations/onehand/standing melee attack horizontal.fbx"
+      ],
+      "death": "res://assets/animations/twohand_pack/two handed sword death.fbx",
+      "cast": "res://assets/animations/heal/heal.fbx",
+      "grip": {
+        "right": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            -90
+          ]
+        },
+        "left": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            0.1,
+            0.02
+          ],
+          "rotation": [
+            0,
+            180,
+            0
+          ]
+        },
+        "back": {
+          "position": [
+            -0.09,
+            0.27,
+            -0.17
+          ],
+          "rotation": [
+            0,
+            0,
+            200
+          ]
+        },
+        "shield": {
+          "position": [
+            -0.12,
+            0.12,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "caster_pack",
+      "idle": "res://assets/animations/spell_pack/standing idle.fbx",
+      "walk": "res://assets/animations/spell_pack/Standing Walk Forward.fbx",
+      "attack": [
+        "res://assets/animations/spell_pack/Standing 1H Magic Attack 01.fbx",
+        "res://assets/animations/spell_pack/Standing 1H Magic Attack 02.fbx"
+      ],
+      "death": "res://assets/animations/spell_pack/Standing React Death Backward.fbx",
+      "cast": "res://assets/animations/spell_pack/standing 1H cast spell 01.fbx",
+      "attack_speed": 1.2,
+      "release": 0.45,
+      "grip": {
+        "right": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            -90
+          ]
+        },
+        "left": {
+          "position": [
+            0.0,
+            0.08,
+            0.03
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            0.1,
+            0.02
+          ],
+          "rotation": [
+            0,
+            180,
+            0
+          ]
+        },
+        "back": {
+          "position": [
+            -0.09,
+            0.27,
+            -0.17
+          ],
+          "rotation": [
+            0,
+            0,
+            200
+          ]
+        },
+        "shield": {
+          "position": [
+            -0.12,
+            0.12,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
     }
-  ]
+  ],
+  "auto": {
+    "one_hand": "one_hand",
+    "shield": "one_hand_shield",
+    "two_hand": "two_hand",
+    "bow": "bow",
+    "unarmed": "unarmed"
+  }
 }

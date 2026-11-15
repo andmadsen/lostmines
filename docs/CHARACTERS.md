@@ -127,7 +127,21 @@ override a slot for one hero.
 
 Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 
-## 6. Getting assets
+## 6. Animations
+
+Mixamo packs live in `assets/animations/<pack>/` (onehand, onehand_shield_pack,
+twohand_pack, bow_pack, spell_pack). They work on every hero (retargeting).
+
+* An animation set in `data/animations.json` lists `idle`, `walk`, `attack`,
+  `death`, `cast`; `attack` may be a list - each swing picks one at random.
+* `look.animation_set: "auto"` picks the set from what the hero holds, through
+  the `auto` table: `one_hand`, `shield` (one-hander + shield), `two_hand`,
+  `bow`, `unarmed`. Changing weapons changes the set at once.
+* Root motion is removed on load: walks keep their sway, attacks and deaths
+  stay on the spot. The walk speed is measured from the walk's own travel, so
+  feet do not slide.
+
+## 7. Getting assets
 
 * MakeHuman asset packs (CC0 / CC-BY): static.makehumancommunity.org/assets/assetpacks
   - system assets, skins01/02, hair01/02, eyebrows01, eyelashes01, bodyparts05/06
@@ -138,7 +152,7 @@ Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 * Mixamo animations: "Without Skin", "In Place"; they play on MakeHuman heroes
   through `scripts/game/retarget.gd` (A-pose vs T-pose handled automatically).
 
-## 7. Lessons learned
+## 8. Lessons learned
 
 * Spikes from hands/feet: MakeHuman sometimes gives a few clothing vertices a
   little weight on a far bone (a glove vertex on the shoulder). The builder
@@ -161,7 +175,7 @@ Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 * Feet and toes are NOT direction-aligned in the retarget (both rest poses stand
   flat; aligning ankle-to-toe directions put the hero on tiptoe).
 
-## 8. Known limits
+## 9. Known limits
 
 * MakeHuman hair has see-through strands in some lights.
 * Helmets do not hide hair yet (hair mesh should be hidden when a helmet is on).

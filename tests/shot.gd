@@ -245,6 +245,42 @@ func _process(_d: float) -> void:
 				if m.is_visible_in_tree() and not u.visual.model.is_ancestor_of(m):
 					print("visible mesh ", m.name, " ", m.get_class(), " path ", u.get_path_to(m))
 			get_tree().quit()
+	elif plan == "styles":
+		var u: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 0]
+		var combos := OS.get_environment("LM_COMBOS").split(";")
+		var idx := int((frame - 10) / 70)
+		var ph := (frame - 10) % 70
+		if frame >= 10 and idx < combos.size():
+			if ph == 0:
+				scene.paused = false
+				for o in scene.units:
+					if o != u: o.visible = false
+				for kv in combos[idx].split(","):
+					var p2 := kv.split(":")
+					u.equipment[p2[0]] = p2[1]
+				u.visual.apply_equipment(u.equipment)
+				u._calm = -999.0
+				u.visual.set_armed(true)
+				var s := float(DataDB.heroes[u.data_id]["look"].get("scale", 1.0))
+				scene.rig.focus(u.global_position)
+				scene.rig.position.y = 0.95 * s - 0.8
+				scene.rig._target_distance = 3.2 * s + 0.4
+				scene.rig.distance = scene.rig._target_distance
+				scene.rig.pitch = deg_to_rad(-8.0)
+				scene.rig.yaw = u.rotation.y + PI + 0.9
+			if ph == 20:
+				_save("st_%d_idle" % idx)
+				u.visual.swing()
+				var ap: AnimationPlayer = u.visual.anim_player
+				var an := ap.get_animation(ap.current_animation)
+				for ti in an.get_track_count():
+					if an.track_get_type(ti) == Animation.TYPE_POSITION_3D:
+						print("postrack ", an.track_get_path(ti), " k0 ", an.track_get_key_value(ti, 0), " kmid ", an.track_get_key_value(ti, an.track_get_key_count(ti) / 2))
+			for k in 3:
+				if ph == 30 + k * 12:
+					_save("st_%d_a%d" % [idx, k])
+		if frame == 10 + 70 * combos.size():
+			get_tree().quit()
 	elif plan == "gallery":
 		var combos := [
 			[0, {"main_hand": "longsword", "off_hand": "heater_shield", "head": "great_helm"}],

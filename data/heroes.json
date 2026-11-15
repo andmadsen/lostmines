@@ -21,7 +21,7 @@
         "scale": 1.0,
         "width": 1.0,
         "model": "res://assets/characters/aurelia_mh.glb",
-        "animation_set": "sword_shield",
+        "animation_set": "auto",
         "model_old": "res://assets/characters/aurelia.fbx",
         "tints": {
           "hair": "#4a2e1c",
@@ -170,7 +170,7 @@
         "scale": 0.72,
         "width": 1.0,
         "model": "res://assets/characters/pip.fbx",
-        "animation_set": "bow"
+        "animation_set": "auto"
       },
       "equipment": {
         "main_hand": "shortbow",
@@ -212,7 +212,7 @@
         "scale": 0.68,
         "width": 1.2,
         "model": "res://assets/characters/keldrin.fbx",
-        "animation_set": "mace_shield"
+        "animation_set": "auto"
       },
       "equipment": {
         "main_hand": "mace",
@@ -258,7 +258,7 @@
         "scale": 0.85,
         "width": 0.92,
         "model": "res://assets/characters/shirvani.fbx",
-        "animation_set": "caster"
+        "animation_set": "caster_pack"
       },
       "equipment": {
         "main_hand": "quarterstaff",

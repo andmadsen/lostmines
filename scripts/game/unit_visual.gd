@@ -36,6 +36,11 @@ var anim_player: AnimationPlayer
 var move_speed := 3.0
 var _walk_ref_speed := 1.5
 var _attack_len := 1.0
+var _attacks: Array = []          ## "attack/attack", "attack/attack2"... picked at random
+var _attack_lens: Dictionary = {}
+var _set_id := ""
+var _skel: Skeleton3D
+var _model_path := ""
 var back_slot: Node3D = null      ## where the main weapon rests when sheathed
 var _main_weapon: Node3D = null
 var _main_slot: Node3D = null      ## the hand the main weapon is held in
@@ -125,7 +130,7 @@ func _build_model(path: String) -> void:
 	anim_player = model.find_child("AnimationPlayer", true, false)
 	var set_id := str(look.get("animation_set", ""))
 	var aset: Dictionary = DataDB.animation_sets.get(set_id, {})
-	if set_id != "" and aset.is_empty():
+	if set_id != "" and set_id != "auto" and aset.is_empty():
 		push_warning("Animation set '%s' not found in data/animations.json" % set_id)
 	_walk_ref_speed = float(aset.get("walk_speed", 1.5)) * float(look.get("scale", 1.0))
 	release_frac = float(aset.get("release", 0.5))
@@ -135,41 +140,12 @@ func _build_model(path: String) -> void:
 		# glTF characters (e.g. built in MakeHuman) come without a player
 		anim_player = AnimationPlayer.new()
 		model.add_child(anim_player)
-	if anim_player:
-		var skel_path := str(anim_player.get_node(anim_player.root_node).get_path_to(skel)) if skel else "Skeleton3D"
-		for key in ["idle", "walk", "attack", "death", "cast"]:
-			var p := str(aset.get(key, ""))
-			if p == "":
-				continue
-			if not ResourceLoader.exists(p):
-				push_warning("Animation '%s' not found: %s (check data/animations.json, or restart if the file was just moved)" % [key, p])
-				continue
-			var src: Node = (load(p) as PackedScene).instantiate()
-			var sap: AnimationPlayer = src.find_child("AnimationPlayer", true, false)
-			if sap and sap.get_animation_list().size() > 0:
-				var anim: Animation = sap.get_animation(sap.get_animation_list()[0]).duplicate()
-				var src_skel: Skeleton3D = src.find_child("Skeleton3D", true, false)
-				if skel and src_skel and Retarget.needed(src_skel, skel):
-					if _slot_fix.is_empty():
-						for bn in ["mixamorig_RightHand", "mixamorig_LeftHand", "mixamorig_LeftForeArm", "mixamorig_Spine2", "mixamorig_Hips", "mixamorig_Head"]:
-							_slot_fix[bn] = Retarget.slot_correction(src_skel, skel, bn)
-					anim = Retarget.convert(anim, src_skel, skel, skel_path, "%s|%s" % [path, p]).duplicate()
-				elif skel_path != "Skeleton3D":
-					for ti in anim.get_track_count():
-						var tp := anim.track_get_path(ti)
-						anim.track_set_path(ti, NodePath("%s:%s" % [skel_path, tp.get_concatenated_subnames()]))
-				anim.loop_mode = Animation.LOOP_LINEAR if key in ["idle", "walk"] else Animation.LOOP_NONE
-				if key == "attack":
-					_attack_len = anim.length
-				if key == "cast":
-					_cast_len = anim.length
-				var lib := AnimationLibrary.new()
-				lib.add_animation(key, anim)
-				if anim_player.has_animation_library(key):
-					anim_player.remove_animation_library(key)
-				anim_player.add_animation_library(key, lib)
-			src.free()
-		_play("idle", 0.0)
+	_skel = skel
+	_model_path = path
+	if set_id == "auto":
+		set_id = str(DataDB.animation_auto.get("one_hand", ""))
+		aset = DataDB.animation_sets.get(set_id, {})
+	_load_set(set_id)
 	var grip: Dictionary = aset.get("grip", {}).duplicate()
 	grip.merge(look.get("grip", {}), true)   # per-model fine tuning (bone axes differ between rigs)
 	hand_r = _bone_slot(skel, "mixamorig_RightHand", grip.get("right", {}))
@@ -283,6 +259,116 @@ func _bone_slot(skel: Skeleton3D, bone: String, g: Dictionary) -> Node3D:
 	return slot
 
 
+## Loads an animation set (data/animations.json) onto the model. Mixamo
+## animations are retargeted when the rig differs; root motion is removed
+## (the game moves the unit), and the walk speed is measured from it.
+func _load_set(set_id: String) -> void:
+	if anim_player == null or set_id == _set_id:
+		return
+	var aset: Dictionary = DataDB.animation_sets.get(set_id, {})
+	if aset.is_empty():
+		push_warning("Animation set '%s' not found in data/animations.json" % set_id)
+		return
+	_set_id = set_id
+	var skel := _skel
+	var path := _model_path
+	var s := float(look.get("scale", 1.0))
+	_walk_ref_speed = float(aset.get("walk_speed", 1.5)) * s
+	release_frac = float(aset.get("release", 0.5))
+	attack_speed = float(aset.get("attack_speed", 1.4))
+	cast_release = float(aset.get("cast_release", 0.5))
+	_attacks.clear()
+	_attack_lens.clear()
+	var skel_path := str(anim_player.get_node(anim_player.root_node).get_path_to(skel)) if skel else "Skeleton3D"
+	for lib_name in anim_player.get_animation_library_list():
+		if str(lib_name) != "":
+			anim_player.remove_animation_library(lib_name)
+	for key in ["idle", "walk", "attack", "death", "cast"]:
+		var files = aset.get(key, "")
+		var list: Array = files if files is Array else ([files] if str(files) != "" else [])
+		var lib := AnimationLibrary.new()
+		var n := 0
+		for p in list:
+			p = str(p)
+			if not ResourceLoader.exists(p):
+				push_warning("Animation '%s' not found: %s (check data/animations.json)" % [key, p])
+				continue
+			var src: Node = (load(p) as PackedScene).instantiate()
+			var sap: AnimationPlayer = src.find_child("AnimationPlayer", true, false)
+			if sap and sap.get_animation_list().size() > 0:
+				var anim: Animation = sap.get_animation(sap.get_animation_list()[0]).duplicate()
+				var src_skel: Skeleton3D = src.find_child("Skeleton3D", true, false)
+				if skel and src_skel and Retarget.needed(src_skel, skel):
+					if _slot_fix.is_empty():
+						for bn in ["mixamorig_RightHand", "mixamorig_LeftHand", "mixamorig_LeftForeArm", "mixamorig_Spine2", "mixamorig_Hips", "mixamorig_Head"]:
+							_slot_fix[bn] = Retarget.slot_correction(src_skel, skel, bn)
+					anim = Retarget.convert(anim, src_skel, skel, skel_path, "%s|%s" % [path, p]).duplicate()
+				elif skel_path != "Skeleton3D":
+					for ti in anim.get_track_count():
+						var tp := anim.track_get_path(ti)
+						anim.track_set_path(ti, NodePath("%s:%s" % [skel_path, tp.get_concatenated_subnames()]))
+				var loop: bool = key in ["idle", "walk"]
+				var moved := _strip_root_motion(anim, loop)
+				if key == "walk" and moved > 0.3:
+					# body scale is applied by the node above the model
+					_walk_ref_speed = moved / anim.length * s
+				anim.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
+				var name_: String = key if n == 0 else "%s%d" % [key, n + 1]
+				lib.add_animation(name_, anim)
+				if key == "attack":
+					_attacks.append("attack/" + name_)
+					_attack_lens["attack/" + name_] = anim.length
+					_attack_len = anim.length
+				if key == "cast":
+					_cast_len = anim.length
+				n += 1
+			src.free()
+		if n > 0:
+			anim_player.add_animation_library(key, lib)
+	anim_player.stop()
+	_play("idle", 0.0)
+
+
+## Removes the travel of the hips (the game moves the unit itself) but keeps
+## the up-down bob and sway. Returns how far the source animation travelled.
+static func _strip_root_motion(anim: Animation, loop: bool) -> float:
+	for i in anim.get_track_count():
+		if anim.track_get_type(i) != Animation.TYPE_POSITION_3D or not str(anim.track_get_path(i)).ends_with("Hips"):
+			continue
+		var kc := anim.track_get_key_count(i)
+		if kc < 2:
+			return 0.0
+		var p0: Vector3 = anim.track_get_key_value(i, 0)
+		var p1: Vector3 = anim.track_get_key_value(i, kc - 1)
+		var moved := Vector2(p1.x - p0.x, p1.z - p0.z).length()
+		for k in kc:
+			var v: Vector3 = anim.track_get_key_value(i, k)
+			var t := anim.track_get_key_time(i, k) / maxf(0.001, anim.length)
+			if loop:   # remove the steady travel, keep the sway
+				var drift := p0.lerp(p1, t) - p0
+				anim.track_set_key_value(i, k, Vector3(v.x - drift.x, v.y, v.z - drift.z))
+			else:      # lunges and falls stay on the spot
+				anim.track_set_key_value(i, k, Vector3(p0.x, v.y, p0.z))
+		return moved
+	return 0.0
+
+
+## Chooses the animation set for what the hero holds (look.animation_set = "auto").
+func _style_for(equipment: Dictionary) -> String:
+	var main := DataDB.item(str(equipment.get("main_hand", "")))
+	var off := DataDB.item(str(equipment.get("off_hand", "")))
+	var style := "one_hand"
+	if bool(main.get("ranged", false)):
+		style = "bow"
+	elif bool(main.get("two_handed", false)):
+		style = "two_hand"
+	elif str(off.get("type", "")) == "shield":
+		style = "shield"
+	elif main.is_empty():
+		style = "unarmed"
+	return str(DataDB.animation_auto.get(style, DataDB.animation_auto.get("one_hand", "")))
+
+
 func _play(name_: String, blend := 0.2) -> void:
 	if anim_player == null:
 		return
@@ -306,6 +392,8 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 	_main_weapon = null
 	held_light = null
 	if using_model:
+		if str(look.get("animation_set", "")) == "auto":
+			_load_set(_style_for(equipment))
 		_show_outfits(equipment)
 		_attach_items(equipment)
 		return
@@ -551,8 +639,10 @@ func release_time() -> float:
 func swing() -> void:
 	set_armed(true)
 	if using_model:
-		if anim_player and anim_player.has_animation("attack/attack"):
-			anim_player.play("attack/attack", 0.1)
+		if anim_player and not _attacks.is_empty():
+			var pick: String = _attacks[randi() % _attacks.size()]
+			_attack_len = float(_attack_lens.get(pick, _attack_len))
+			anim_player.play(pick, 0.1)
 			anim_player.seek(0.0, true)
 			anim_player.speed_scale = attack_speed
 			_swing = _attack_len / attack_speed
