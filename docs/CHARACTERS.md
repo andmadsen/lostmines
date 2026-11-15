@@ -18,6 +18,8 @@ in `data/`; the tools in `tools/` turn those recipes into models.
     weapons/      older hand-picked weapons, one folder each (scene.gltf ...)
     gear/         Sketchfab library: armour, helmets, weapons, shields (.glb) + license.txt
     textures/     cave_wall, cave_floor (Poly Haven)
+    nature/       forest road scene: textures/ (6 ground sets, 2K), hdri/ (sky), models/ (Poly Haven
+                  plants, rocks, props, glTF), models_sf/ (Sketchfab trees and wagons) + license.txt
     _unused/      no longer used; ignored by Godot (.gdignore) - safe to delete
 
 Monsters with weapons use the same animation sets as heroes
