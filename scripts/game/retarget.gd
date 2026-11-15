@@ -201,7 +201,7 @@ static func _alignment(src: Skeleton3D, dst: Skeleton3D, pairs: Array) -> Dictio
 		# feet stand flat in both rest poses, but ankle-to-toe directions differ
 		# with proportions: aligning them would tip the hero onto the toes
 		var bn := dst.get_bone_name(di)
-		if bn.ends_with("Foot") or bn.contains("Toe"):
+		if _upright(bn):
 			out[di] = Quaternion.IDENTITY
 			continue
 		var ds := _bone_dir(src, si)
@@ -215,12 +215,21 @@ static func _alignment(src: Skeleton3D, dst: Skeleton3D, pairs: Array) -> Dictio
 	for p in pairs:
 		var di: int = p[1]
 		var bn2 := dst.get_bone_name(di)
-		if bn2.ends_with("Foot") or bn2.contains("Toe"):
+		if _upright(bn2):
 			continue
 		if _bone_dir(dst, di) == Vector3.ZERO:
 			var par := dst.get_bone_parent(di)
 			out[di] = out.get(par, Quaternion.IDENTITY)
 	return out
+
+
+## Bones that stand the same way in both rest poses and are NOT direction-aligned:
+## feet (flat on the floor; aligning ankle-to-toe tipped heroes onto their toes)
+## and the upright trunk - hips, spine, neck, head (a dwarf's short neck and deep
+## chest turned the chest 30 degrees forward and sank the head into it).
+static func _upright(bn: String) -> bool:
+	return bn.ends_with("Foot") or bn.contains("Toe") or bn.ends_with("Hips") or bn.contains("Spine") \
+		or bn.ends_with("Neck") or bn.ends_with("Head") or bn.contains("HeadTop")
 
 
 ## Direction from a bone to its (first, main) child in rest pose, skeleton space.

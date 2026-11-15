@@ -27,6 +27,7 @@ HumanService = M("services.humanservice", "HumanService")
 AssetService = M("services.assetservice", "AssetService")
 ExportService = M("services.exportservice", "ExportService")
 ObjectService = M("services.objectservice", "ObjectService")
+TargetService = M("services.targetservice", "TargetService")
 
 
 def find(name, subdir):
@@ -591,6 +592,398 @@ def fit_rigid(body, spec):
     return ob
 
 
+# ---------------------------------------------------------------- panels
+# Generated cloth panels (tabards, aprons): a grid laid over the front (and
+# back) of the dressed body, painted with a colour, a border and an emblem.
+# Above the belt it follows the torso bones; below it hangs straight and
+# follows the hips and, partly, both thighs, so legs swing under it.
+EMBLEMS = {
+    # outlines in 0..1 (x right, y down), drawn in the trim colour
+    "anvil": [(0.02, 0.20), (0.70, 0.20), (0.98, 0.16), (0.90, 0.30), (0.78, 0.40), (0.66, 0.44),
+              (0.62, 0.62), (0.84, 0.78), (0.86, 0.90), (0.14, 0.90), (0.16, 0.78), (0.38, 0.62),
+              (0.34, 0.44), (0.20, 0.42), (0.10, 0.36), (0.04, 0.30)],
+    "sun": None,
+}
+
+
+def _paint_panel(path, spec):
+    from PIL import Image, ImageDraw
+    w, h = 512, 2048
+    c = tuple(int(x * 255) for x in spec.get("color", (0.85, 0.81, 0.7)))
+    t = tuple(int(x * 255) for x in spec.get("trim", (0.72, 0.53, 0.2)))
+    im = Image.new("RGB", (w, h), c)
+    d = ImageDraw.Draw(im)
+    import random
+    rnd = random.Random(7)
+    for _ in range(9000):   # woven cloth: faint speckles and threads
+        x, y = rnd.randrange(w), rnd.randrange(h)
+        k = rnd.uniform(0.9, 1.06)
+        im.putpixel((x, y), tuple(max(0, min(255, int(v * k))) for v in c))
+    b = int(w * spec.get("border", 0.07))
+    d.rectangle([0, 0, b, h], fill=t)
+    d.rectangle([w - b, 0, w, h], fill=t)
+    d.rectangle([0, h - b * 2, w, h], fill=t)
+    d.rectangle([0, 0, w, b // 2], fill=t)
+    for y0 in (b * 3,):   # a thin inner line
+        d.rectangle([b + 6, 0, b + 9, h - b * 2 - 6], fill=t)
+        d.rectangle([w - b - 9, 0, w - b - 6, h - b * 2 - 6], fill=t)
+    em = EMBLEMS.get(spec.get("emblem", ""))
+    if em:
+        for cy, size in ((spec.get("emblem_y", 0.2), 0.82), (spec.get("emblem_y2", 0.72), 0.66)):
+            if cy is None:
+                continue
+            sz = w * size
+            ox, oy = (w - sz) / 2, cy * h - sz / 2
+            d.polygon([(ox + x * sz, oy + y * sz) for x, y in em], fill=t)
+    im.save(path)
+
+
+def make_panel(body, spec, root):
+    import bmesh
+    import mathutils
+    from mathutils.bvhtree import BVHTree
+    rig = _rig_of(body)
+    dg = bpy.context.evaluated_depsgraph_get()
+    skip = tuple(spec.get("ignore", ["hair", "beard", "moustache", "eye", "brow", "lash", "teeth", "tongue"]))
+    trees = []
+    for o in [body] + ObjectService.get_list_of_children(root):
+        if o.type == "MESH" and o.name.startswith(("outfit_", body.name)) and not any(k in o.name.lower() for k in skip):
+            if o.name.startswith("outfit_panel"):
+                continue
+            trees.append(BVHTree.FromObject(o, dg))
+    hips = _bone_head(rig, "Hips")
+    sp = {n: _bone_head(rig, n).z for n in ("Hips", "Spine", "Spine1", "Spine2", "Neck")}
+    knee = _bone_head(rig, "LeftLeg").z
+    top = sp["Spine2"] + (sp["Neck"] - sp["Spine2"]) * spec.get("top", 0.6)
+    bottom = knee + (hips.z - knee) * spec.get("bottom", 0.0)
+    belt = hips.z + spec.get("belt", 0.04)
+    gap = spec.get("gap", 0.012)
+    rows, cols = 28, 9
+    wt, wb = spec.get("width_top", 0.32), spec.get("width_bottom", 0.26)
+
+    def surface(x, z, side):
+        """y of the outermost dressed surface at (x, z); side -1 front, +1 back."""
+        best = None
+        for t in trees:
+            hit = t.ray_cast(mathutils.Vector((x, side * 1.5, z)), mathutils.Vector((0, -side, 0)))
+            if hit[0] is not None:
+                y = hit[0].y
+                if best is None or (side < 0 and y < best) or (side > 0 and y > best):
+                    best = y
+        return best
+
+    made = []
+    for side in ([-1, 1] if spec.get("back", True) else [-1]):
+        zs = [top + (bottom - top) * r / (rows - 1) for r in range(rows)]
+        widths = [wt if z >= belt else wb + (wt - wb) * max(0.0, (z - bottom)) / max(0.01, belt - bottom) * 0.0 for z in zs]
+        grid = []
+        for z, w in zip(zs, widths):
+            xs = [-w / 2 + w * c / (cols - 1) for c in range(cols)]
+            ys = [surface(x, z, side) for x in xs]
+            if z < belt:   # hang straight: outermost point of the body across the width
+                probe = [surface(-wt / 2 + wt * c / 12, z, side) for c in range(13)]
+                probe = [p for p in probe if p is not None]
+                ext = (min(probe) if side < 0 else max(probe)) if probe else None
+                ys = [ext] * cols
+            grid.append([(x, y, z) for x, y in zip(xs, ys)])
+        # fill misses from the row above; keep the hanging part from bending inwards
+        for r in range(rows):
+            for c in range(cols):
+                x, y, z = grid[r][c]
+                if y is None:
+                    y = grid[r - 1][c][1] if r else hips.y + side * 0.15
+                grid[r][c] = (x, y, z)
+        for r in range(1, rows):
+            if zs[r] < belt:
+                for c in range(cols):
+                    x, y, z = grid[r][c]
+                    yp = grid[r - 1][c][1]
+                    y = min(y, yp) if side < 0 else max(y, yp)
+                    grid[r][c] = (x, y, z)
+        me = bpy.data.meshes.new("panel")
+        bm = bmesh.new()
+        vs = [[bm.verts.new((x, y + side * gap, z)) for (x, y, z) in row] for row in grid]
+        uvl = bm.loops.layers.uv.new()
+        for r in range(rows - 1):
+            for c in range(cols - 1):
+                quad = [vs[r][c], vs[r][c + 1], vs[r + 1][c + 1], vs[r + 1][c]]
+                f = bm.faces.new(list(reversed(quad)) if side < 0 else quad)   # normals face outwards
+                for lp in f.loops:
+                    ri = next(i for i in range(rows) if lp.vert in vs[i])
+                    ci = vs[ri].index(lp.vert)
+                    u = ci / (cols - 1)
+                    lp[uvl].uv = (u if side < 0 else 1 - u, 1 - ri / (rows - 1))
+        bm.to_mesh(me)
+        bm.free()
+        name = "outfit_" + spec["id"] + ("" if side < 0 else "_back")
+        ob = bpy.data.objects.new(name, me)
+        body.users_collection[0].objects.link(ob)
+        # paint and material
+        tex = os.path.join(TEX, "_gen_" + spec["id"] + ".png")
+        _paint_panel(tex, spec)
+        m = bpy.data.materials.new(name + "_mat")
+        m.use_nodes = True
+        nt = m.node_tree
+        bsdf = nt.nodes.get("Principled BSDF")
+        bsdf.inputs["Roughness"].default_value = 0.92
+        img = nt.nodes.new("ShaderNodeTexImage")
+        img.image = bpy.data.images.load(tex, check_existing=False)
+        img.image.pack()
+        nt.links.new(img.outputs["Color"], bsdf.inputs["Base Color"])
+        me.materials.append(m)
+        sol = ob.modifiers.new("thick", "SOLIDIFY")
+        sol.thickness = spec.get("thickness", 0.004)
+        sol.offset = 0.0
+        bpy.context.view_layer.objects.active = ob
+        bpy.ops.object.modifier_apply(modifier="thick")
+        # weights: torso bones by height above the belt, hips + thighs below
+        groups = {}
+
+        def add(bone, i, wgt):
+            if wgt <= 0:
+                return
+            if bone not in groups:
+                groups[bone] = ob.vertex_groups.new(name=B + bone)
+            groups[bone].add([i], wgt, "ADD")
+        legs = spec.get("legs", 0.35)
+        chain = [("Hips", sp["Hips"]), ("Spine", sp["Spine"]), ("Spine1", sp["Spine1"]), ("Spine2", sp["Spine2"])]
+        for v in ob.data.vertices:
+            z = v.co.z
+            if z < belt:
+                k = min(1.0, (belt - z) / max(0.01, belt - bottom)) * legs
+                add("Hips", v.index, 1.0 - k)
+                add("LeftUpLeg", v.index, k / 2)
+                add("RightUpLeg", v.index, k / 2)
+                continue
+            for (b0, z0), (b1, z1) in zip(chain, chain[1:]):
+                if z <= z1:
+                    t = max(0.0, min(1.0, (z - z0) / max(0.01, z1 - z0)))
+                    add(b0, v.index, 1 - t)
+                    add(b1, v.index, t)
+                    break
+            else:
+                add("Spine2", v.index, 1.0)
+        ob.parent = rig
+        am = ob.modifiers.new("Armature", "ARMATURE")
+        am.object = rig
+        made.append(ob)
+        print("  panel:", name, len(ob.data.vertices), "verts")
+    return made
+
+
+# ---------------------------------------------------------------- beards
+# A full beard grown from the face: rings from the cheeks down to the chest,
+# each wrapped over the (dressed) body and pushed out by a thickness that
+# fades towards the sides and the tip. Below the chin it hangs straight
+# (never tucks into the neck). Optional braids with metal rings.
+def _paint_hair(path, colour, seed=3):
+    from PIL import Image, ImageDraw, ImageFilter
+    import random
+    w, h = 512, 1024
+    base = tuple(int(c * 255) for c in colour)
+    im = Image.new("RGB", (w, h), base)
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(seed)
+    for _ in range(2600):
+        x = rnd.uniform(0, w)
+        y = rnd.uniform(-h * 0.2, h)
+        length = rnd.uniform(h * 0.15, h * 0.6)
+        k = rnd.uniform(0.6, 1.35)
+        col = tuple(max(0, min(255, int(c * k))) for c in base)
+        pts = []
+        for i in range(12):
+            t = i / 11
+            pts.append((x + math.sin(t * 3 + x) * 6, y + t * length))
+        d.line(pts, fill=col, width=rnd.choice((1, 1, 2, 3)))
+    im = im.filter(ImageFilter.GaussianBlur(0.7))
+    im.save(path)
+
+
+def _hair_material(name, tex, rough=0.75):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+    bsdf.inputs["Roughness"].default_value = rough
+    img = nt.nodes.new("ShaderNodeTexImage")
+    img.image = bpy.data.images.load(tex, check_existing=False)
+    img.image.pack()
+    nt.links.new(img.outputs["Color"], bsdf.inputs["Base Color"])
+    return m
+
+
+def make_beard(body, spec, root):
+    import bmesh
+    import mathutils
+    from mathutils.bvhtree import BVHTree
+    rig = _rig_of(body)
+    dg = bpy.context.evaluated_depsgraph_get()
+    skip = ("hair", "beard", "moustache", "eye", "brow", "lash", "teeth", "tongue")
+    trees = [BVHTree.FromObject(o, dg) for o in [body] + ObjectService.get_list_of_children(root)
+             if o.type == "MESH" and (o == body or o.name.startswith("outfit_")) and not any(k in o.name.lower() for k in skip)]
+    head = _bone_head(rig, "Head")
+    neck = _bone_head(rig, "Neck")
+    yc = head.y
+    # landmarks from the body: mouth (teeth) and chin
+    teeth = next((o for o in ObjectService.get_list_of_children(root) if "teeth" in o.name and o.type == "MESH"), None)
+    z_mouth = (sum((teeth.matrix_world @ v.co).z for v in teeth.data.vertices) / len(teeth.data.vertices)) if teeth else head.z + 0.06
+    front = [body.matrix_world @ v.co for v in body.data.vertices]
+    chin_pts = [p for p in front if abs(p.x) < 0.012 and head.z - 0.06 < p.z < z_mouth and p.y < yc - 0.03]
+    z_chin = min(p.z for p in chin_pts) if chin_pts else head.z - 0.02
+    z_top = z_mouth + spec.get("top", 0.045)
+    z_bot = z_chin - spec.get("length", 0.3)
+    T = spec.get("thickness", 0.045)
+    K, N = 30, 29
+    amax = math.radians(spec.get("max_angle", 72))
+
+    def surface_r(theta, z):
+        d = mathutils.Vector((math.sin(theta), -math.cos(theta), 0.0))
+        o = mathutils.Vector((d.x * 0.6, yc + d.y * 0.6, z))
+        best = None
+        for t in trees:
+            hit = t.ray_cast(o, -d, 0.6)
+            if hit[0] is not None and (best is None or hit[3] < best):
+                best = hit[3]
+        return 0.6 - best if best is not None else None
+
+    rings = []
+    prev = None
+    for k in range(K):
+        t = k / (K - 1)
+        z = z_top + (z_bot - z_top) * t
+        w = spec.get("width_top", 0.085) + (spec.get("width_bottom", 0.025) - spec.get("width_top", 0.085)) * (t ** 1.3)
+        thick = T * (0.25 + 0.75 * math.sin(min(1.0, t * 2.4) * math.pi / 2)) * (1 - t) ** 0.45
+        row = []
+        for j in range(N):
+            th = -amax + 2 * amax * j / (N - 1)
+            rs = surface_r(th, z)
+            if rs is None:
+                rs = prev[j][0] + 0.006 if prev else 0.08
+            x = abs(math.sin(th)) * rs
+            cover = math.cos(math.pi / 2 * min(1.0, x / w)) ** 0.5 if x < w and abs(th) < math.radians(80) else 0.0
+            cover *= min(1.0, (z_top - z) / 0.035 + 0.15)   # soft top edge (no steps at the sideburns)
+            cheek = spec.get("mouth_half_width", 0.032)
+            if z > z_mouth - spec.get("below_lip", 0.016):   # beside the mouth only (sideburns, cheeks)
+                cover *= max(0.0, min(1.0, (x - cheek) / 0.015))
+            if cover > 0.03:
+                ri = rs - 0.006
+                ro = rs + 0.003 + thick * cover
+            else:   # no beard here: fold the shell away deep inside the body
+                ri = ro = min(rs - 0.03, 0.03)   # (near the neck axis: inside head, neck and chest)
+            if prev is not None and z < z_chin and cover > 0.03:   # hang: do not tuck in under the chin
+                ro = max(ro, prev[j][1] - 0.003)
+            row.append((ri, ro, th))
+        rings.append((z, row))
+        prev = row
+    # mesh: outer and inner shell, closed
+    bm = bmesh.new()
+    uvl = bm.loops.layers.uv.new()
+    outer, inner = [], []
+    for z, row in rings:
+        o_r, i_r = [], []
+        for ri, ro, th in row:
+            d = (math.sin(th), -math.cos(th))
+            o_r.append(bm.verts.new((d[0] * ro, yc + d[1] * ro, z)))
+            i_r.append(bm.verts.new((d[0] * ri, yc + d[1] * ri, z)))
+        outer.append(o_r)
+        inner.append(i_r)
+    def quad(vs, uvs):
+        try:
+            f = bm.faces.new(vs)
+        except ValueError:
+            return
+        for lp, uv in zip(f.loops, uvs):
+            lp[uvl].uv = uv
+    for k in range(K - 1):
+        for j in range(N - 1):
+            u0, u1, v0, v1 = j / (N - 1), (j + 1) / (N - 1), 1 - k / (K - 1), 1 - (k + 1) / (K - 1)
+            quad([outer[k][j], outer[k + 1][j], outer[k + 1][j + 1], outer[k][j + 1]], [(u0, v0), (u0, v1), (u1, v1), (u1, v0)])
+            quad([inner[k][j + 1], inner[k + 1][j + 1], inner[k + 1][j], inner[k][j]], [(u1, v0), (u1, v1), (u0, v1), (u0, v0)])
+        for j in (0, N - 1):
+            quad([outer[k][j], inner[k][j], inner[k + 1][j], outer[k + 1][j]], [(0, 1 - k / K)] * 4)
+    for k in (0, K - 1):
+        for j in range(N - 1):
+            quad([outer[k][j], outer[k][j + 1], inner[k][j + 1], inner[k][j]], [(j / N, 1.0)] * 4)
+    # shell faces point away from the neck axis (Godot culls back faces)
+    for f in bm.faces:
+        c = f.calc_center_median()
+        f.normal_update()
+        if f.normal.dot(mathutils.Vector((c.x, c.y - yc, 0.0))) < 0:
+            f.normal_flip()
+    shell = set(bm.faces)
+    # braids: lumps hanging over the beard, with metal rings
+    ring_faces = []
+    for bspec in spec.get("braids", []):
+        xb0 = bspec.get("x", 0.035)
+        z0 = z_chin + bspec.get("start", -0.01)
+        z1 = z_bot + bspec.get("end", 0.0)
+        r0 = bspec.get("radius", 0.016)
+        n = max(3, int((z0 - z1) / (r0 * 1.15)))
+        rings_at = set(bspec.get("rings", [0.25, 0.55, 0.85]))
+        for i in range(n):
+            t = i / (n - 1)
+            z = z0 + (z1 - z0) * t
+            # on top of the beard at this height, at the column closest to x
+            kk = min(K - 1, max(0, int(round((z_top - z) / (z_top - z_bot) * (K - 1)))))
+            xb = xb0 * (1 - 0.45 * t)
+            row = rings[kk][1]
+            cand = [(abs(math.sin(th_) * ro_ - abs(xb)), ro_, th_) for ri_, ro_, th_ in row
+                    if ro_ > ri_ + 0.002 and (th_ > 0) == (xb0 > 0)]
+            if not cand:
+                continue
+            _, ro_, th_ = min(cand)
+            rr = ro_ + r0 * 0.45
+            d = (math.sin(th_), -math.cos(th_))
+            side = 0.004 * (1 if i % 2 else -1)
+            c = mathutils.Vector((d[0] * rr + side, yc + d[1] * rr, z))
+            r = r0 * (1 - 0.35 * t)
+            ret = bmesh.ops.create_uvsphere(bm, u_segments=8, v_segments=6, radius=1.0)
+            tilt = mathutils.Matrix.Rotation(math.radians(28 if i % 2 else -28), 3, "Y")   # plaited strands
+            for v in ret["verts"]:
+                v.co = c + tilt @ mathutils.Vector((v.co.x * r * 0.95, v.co.y * r * 0.8, v.co.z * r * 1.5))
+            if any(abs(t - q) < 0.5 / n for q in rings_at):
+                ret = bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=1.0, radius2=1.0, depth=1.0)
+                for v in ret["verts"]:
+                    v.co = c + mathutils.Vector((v.co.x * r * 1.3, v.co.y * r * 1.3, v.co.z * 0.012))
+                ring_faces.extend({f for v in ret["verts"] for f in v.link_faces})
+    bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f not in shell])
+    me = bpy.data.meshes.new("beard")
+    for f in ring_faces:
+        f.material_index = 1
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new("outfit_" + spec.get("id", "beard"), me)
+    body.users_collection[0].objects.link(ob)
+    tex = os.path.join(TEX, "_gen_" + spec.get("id", "beard") + ".png")
+    _paint_hair(tex, spec.get("color", (0.42, 0.17, 0.07)))
+    me.materials.append(_hair_material(ob.name + "_mat", tex))
+    me.materials.append(_material("gold", tuple(spec.get("ring_color", (0.85, 0.62, 0.22)))))
+    for f in me.polygons:
+        f.use_smooth = True
+    # weights: the face part follows the head, the hanging part the chest
+    hg = ob.vertex_groups.new(name=B + "Head")
+    ng = ob.vertex_groups.new(name=B + "Neck")
+    sg = ob.vertex_groups.new(name=B + "Spine2")
+    z_s = z_chin - spec.get("chest_blend", 0.12)
+    for v in me.vertices:
+        z = v.co.z
+        if z >= z_chin:
+            hg.add([v.index], 1.0, "REPLACE")
+        elif z >= z_s:
+            t = (z_chin - z) / (z_chin - z_s)
+            hg.add([v.index], 1 - t, "REPLACE")
+            ng.add([v.index], t * 0.5, "REPLACE")
+            sg.add([v.index], t * 0.5, "REPLACE")
+        else:
+            ng.add([v.index], 0.3, "REPLACE")
+            sg.add([v.index], 0.7, "REPLACE")
+    ob.parent = rig
+    am = ob.modifiers.new("Armature", "ARMATURE")
+    am.object = rig
+    print("  beard:", ob.name, len(me.vertices), "verts, chin", round(z_chin, 3), "mouth", round(z_mouth, 3))
+    return ob
+
+
 def build(hero_id, out_path=None):
     heroes = {h["id"]: h for h in json.load(open(os.path.join(ROOT, "data", "heroes.json")))["heroes"]}
     body = heroes[hero_id]["body"]
@@ -603,6 +996,14 @@ def build(hero_id, out_path=None):
         "race": body.get("race", {"african": 0.0, "asian": 0.0, "caucasian": 1.0}),
     }
     bm = HumanService.create_human(macro_detail_dict=macro)
+    # extra body shape targets, e.g. {"legs/measure-upperleg-height-decr": 0.8}
+    tdir = os.path.join(os.path.dirname(importlib.import_module("bl_ext.user_default.mpfb").__file__), "data", "targets")
+    for name, weight in body.get("targets", {}).items():
+        path = os.path.join(tdir, name + ".target.gz")
+        if os.path.exists(path):
+            TargetService.load_target(bm, path, weight=float(weight))
+        else:
+            print("  ! target not found:", name)
     skin = find(body.get("skin"), "skins")
     if skin:
         HumanService.set_character_skin(skin, bm, skin_type="GAMEENGINE")
@@ -643,6 +1044,16 @@ def build(hero_id, out_path=None):
                 if c.get("push"):  # lift a layer off the one beneath (boots over trousers)
                     for v in o.data.vertices:
                         v.co += v.normal * c["push"]
+                if c.get("scale"):  # [width, depth, length] about its top-back-centre (a fuller beard)
+                    sx, sy, sz = c["scale"]
+                    xs = [v.co.x for v in o.data.vertices]
+                    ys = [v.co.y for v in o.data.vertices]
+                    zs = [v.co.z for v in o.data.vertices]
+                    ax, ay, az = (min(xs) + max(xs)) / 2, max(ys), max(zs)
+                    for v in o.data.vertices:
+                        v.co.x = ax + (v.co.x - ax) * sx
+                        v.co.y = ay + (v.co.y - ay) * sy
+                        v.co.z = az + (v.co.z - az) * sz
                 print("  clothes:", o.name)
     ExportService.bake_modifiers_remove_helpers(eb, bake_masks=True, bake_subdiv=True, remove_helpers=True, also_proxy=True)
     # freeze the body shape (macro shape keys) so every engine shows it as built
@@ -656,13 +1067,22 @@ def build(hero_id, out_path=None):
     make_outfits(eb, body.get("outfits", ["under_top", "under_legs", "boots", "gloves"]))
     rig_obj = _rig_of(eb)
     for o in ObjectService.get_list_of_children(root):
-        if o.type == "MESH" and o.vertex_groups and "hair" not in o.name:
+        if o.type == "MESH" and o.vertex_groups and not any(k in o.name for k in ("hair", "beard", "moustache")):
             clean_weights(o, rig_obj)
     split_body_by_clothes(eb, body.get("clothes", []))
     for spec in body.get("armour", []):
         fit_armour(eb, spec)
     for spec in body.get("rigid", []):
         fit_rigid(eb, spec)
+    for spec in body.get("panels", []):
+        make_panel(eb, spec, root)
+    for spec in body.get("beards", []):
+        make_beard(eb, spec, root)
+    # stand on the floor: body targets (shorter legs) lift the feet off zero
+    low = min((eb.matrix_world @ v.co).z for v in eb.data.vertices)
+    if abs(low) > 0.002:
+        root.location.z -= low
+        print("  grounded: moved down", round(low, 3))
     bpy.ops.object.select_all(action="DESELECT")
     root.select_set(True)
     kids = ObjectService.get_list_of_children(root)

@@ -1,5 +1,9 @@
 # Characters, armour and gear: how they are made
 
+(The design rules - style, races, party colours, the step-by-step recipe and
+the checklist - are in `docs/CHARACTER_DESIGN.md`. This file is the technical
+reference.)
+
 This is the recipe for building heroes and their equipment, so the next hero,
 armour or helmet is made the same way. Everything is driven by the JSON files
 in `data/`; the tools in `tools/` turn those recipes into models.
@@ -52,7 +56,10 @@ It reads `heroes.json -> heroes[aurelia].body` and writes
 | `race` | `{"african": .., "asian": .., "caucasian": ..}` |
 | `skin` | a skin from the skins packs, e.g. `toigo_light_skin_female_bronze` |
 | `eyes, eyebrows, eyelashes, teeth, tongue, hair` | MakeHuman asset names, e.g. `low-poly`, `elvs_daisy_hair` |
-| `clothes` | list of `{"id": "<outfit name>", "asset": "<mhclo name>", "push": metres}`; `push` lifts a layer off the one beneath (e.g. boots over trousers, 0.004) |
+| `targets` | extra MakeHuman body targets with weights, e.g. `{"legs/measure-upperleg-height-decr": 0.9}` (files in MPFB `data/targets/<group>/`). Keldrin uses them for short legs, broad shoulders, short neck, square head |
+| `clothes` | list of `{"id": "<outfit name>", "asset": "<mhclo name>", "push": metres, "scale": [w, d, l]}`; `push` lifts a layer off the one beneath (e.g. boots over trousers, 0.004); `scale` enlarges a piece about its top-back-centre (moustache) |
+| `panels` | generated cloth panels (tabards), section 3b |
+| `beards` | generated full beards with braids, section 3c |
 | `outfits` | generated cloth layers (`under_top`, `under_legs`, `boots`, `gloves`, `leather`, `chain`) - fallback only |
 | `rigid` | rigid armour pieces, see section 3 |
 
@@ -64,8 +71,13 @@ What the builder does, in order:
    game hides it while that garment is worn (no toes through boots);
 4. makes an export copy, snaps eyes/lashes to the final face, freezes the body
    shape (shape keys applied) so Godot shows exactly what Blender built;
-5. renames each clothing mesh to `outfit_<id>`, builds rigid pieces
-   (`outfit_<id>` as well), exports a `.glb`.
+5. renames each clothing mesh to `outfit_<id>`, builds rigid pieces, panels
+   and beards (`outfit_<id>` as well);
+6. moves the whole figure down so the soles stand at zero (leg targets lift the
+   feet; without this the hero floats), exports a `.glb`.
+
+Quick look without the game: `python3 tools/preview_hero.py <glb> <out.png> pants,boots,beard,...`
+renders front, side, back, 3/4 and the face with only the listed outfits.
 
 Every outfit mesh is in the file; the game shows only the ones the equipment
 asks for (section 4).
@@ -102,12 +114,44 @@ Tuning loop: build, render a Blender preview (front + side) with the body and
 the piece in flat colours, adjust `scale`/`up`/`turn`, repeat. Then check in game
 from four sides and walking (tests: `LM_PLAN=gearclose`, `LM_PLAN=walkseq`).
 
+## 3b. Panels (tabards)
+
+    "panels": [{"id": "tabard", "top": 0.15, "bottom": 0.1, "width_top": 0.3,
+                "width_bottom": 0.24, "gap": 0.012, "back": true,
+                "color": [0.56, 0.51, 0.40], "trim": [0.55, 0.39, 0.13],
+                "emblem": "anvil", "emblem_y": 0.17, "emblem_y2": 0.7}]
+
+A grid is laid over the front (and back: `outfit_<id>_back`) of the dressed body
+(clothes and rigid plates included), `gap` metres off it. `top` is a share of the
+way from Spine2 to the neck, `bottom` a share from the knee up to the hips.
+Above the belt it follows the chest; below it hangs straight and follows the
+hips plus a share (`legs`, 0.35) of both thighs. It is painted with `color`, a
+`trim` border and an `emblem` (`anvil`; add more outlines in `EMBLEMS`).
+
+## 3c. Beards
+
+    "beards": [{"id": "beard", "length": 0.3, "thickness": 0.05, "top": 0.03,
+                "width_top": 0.095, "width_bottom": 0.035, "color": [0.42, 0.17, 0.07],
+                "braids": [{"x": -0.038, "radius": 0.017, "start": -0.03},
+                           {"x": 0.038, "radius": 0.017, "start": -0.03}]}]
+
+Rings from the cheeks (`top` metres above the mouth) to `length` below the
+chin, wrapped over the face and chest, `thickness` thick, narrowing from
+`width_top` to `width_bottom` (half-widths). The lips stay free; below the chin
+it hangs straight. Braids are plaited lumps with metal rings (`ring_color`),
+laid on the beard at `x`. The face part follows the head, the hanging part the
+chest. Hair-strand texture is painted in `color` (no tint needed). MakeHuman's
+own beards are thin cards that cannot be made full - use this for dwarves.
+
 ## 4. Equipment shows outfits (`data/items.json`)
 
 An armour item lists the outfit meshes it turns on:
 
     "chain_mail":  "visual": {"outfits": ["tunic_mail", "gloves_leather"]}
     "plate_armor": "visual": {"outfits": ["tunic_mail", "cuirass", "gloves_leather"]}
+
+A hero can replace the list for one item with `look.armor_outfits`, e.g. Keldrin:
+`{"chain_mail": ["tunic_mail", "pauldrons", "gloves_leather"]}`.
 
 A hero's `look.outfits_always` lists what is always worn (e.g. `pants`,
 `boots_riding`). With no armour the generated `under_top` shirt is shown.
@@ -196,8 +240,12 @@ twohand_pack, bow_pack, spell_pack). They work on every hero (retargeting).
 * Check every set after changing the retarget: `LM_PLAN=rootcheck` prints any
   animation where the hips leave the spot (> 0.25 m) or rise above 1.6 m;
   add `LM_FEET=1` for the average foot height in idle/walk (should be ~0-4 cm).
-* Feet and toes are NOT direction-aligned in the retarget (both rest poses stand
-  flat; aligning ankle-to-toe directions put the hero on tiptoe).
+* Feet, toes and the trunk (hips, spine, neck, head) are NOT direction-aligned
+  in the retarget: they stand the same way in both rest poses. Aligning feet put
+  heroes on tiptoe; aligning the trunk tilted Keldrin's chest 30 degrees forward
+  and sank his head into it (short neck, deep chest). Only arms and legs are aligned.
+* Hero meshes always draw at full detail (`lod_bias` 1000 in `unit_visual.gd`).
+* `LM_PLAN=outfits LM_HERO=<n>` lists which meshes a hero shows.
 
 * Helmets are not drawn for now (`data/settings.json` → `"show_helmets": false`).
   They still count in the rules and show in the character sheet; set it to

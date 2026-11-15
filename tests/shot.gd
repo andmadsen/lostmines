@@ -425,6 +425,13 @@ func _process(_d: float) -> void:
 				_save("walk_%d" % i)
 		if frame == 66:
 			get_tree().quit()
+	elif plan == "outfits":
+		# prints which outfit meshes a hero shows
+		if frame == 10:
+			var hu: Unit = scene.party[int(OS.get_environment("LM_HERO")) if OS.get_environment("LM_HERO") != "" else 0]
+			for m in hu.visual.model.find_children("*", "MeshInstance3D", true, false):
+				print("MESH ", m.name, " visible=", (m as Node3D).is_visible_in_tree())
+			get_tree().quit()
 	elif plan == "rootcheck":
 		# prints how far the hips move in every animation of every set
 		if frame == 5:

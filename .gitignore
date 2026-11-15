@@ -5,3 +5,4 @@
 # Third-party art (Mixamo etc.) stays out of git
 assets/
 __pycache__/
+tools/textures/_gen_*

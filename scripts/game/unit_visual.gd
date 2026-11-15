@@ -127,6 +127,9 @@ func _build_model(path: String) -> void:
 	body.add_child(model)
 	_apply_textures(model, look.get("textures", {}))
 	_apply_tints(model, look.get("tints", {}))
+	# always the full mesh: automatic LODs melt thin parts (beards, moustaches) away
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		(mi as GeometryInstance3D).lod_bias = 1000.0
 	var skel: Skeleton3D = model.find_child("Skeleton3D", true, false)
 	anim_player = model.find_child("AnimationPlayer", true, false)
 	var set_id := str(look.get("animation_set", ""))
@@ -210,9 +213,14 @@ func _show_outfits(equipment: Dictionary) -> void:
 	var on: Array = look.get("outfits_always", ["under_legs", "boots"]).duplicate()
 	if str(equipment.get("armor", "")) == "":
 		on.append("under_top")
+	# look.armor_outfits = {"chain_mail": [...]} replaces an item's list for this hero
+	var own: Dictionary = look.get("armor_outfits", {})
 	for slot in ["armor", "head", "off_hand"]:
-		var it := DataDB.item(str(equipment.get(slot, "")))
-		on.append_array(it.get("visual", {}).get("outfits", []))
+		var id := str(equipment.get(slot, ""))
+		if own.has(id):
+			on.append_array(own[id])
+			continue
+		on.append_array(DataDB.item(id).get("visual", {}).get("outfits", []))
 	for m in meshes:
 		(m as Node3D).visible = str(m.name).trim_prefix("outfit_") in on
 	# skin under worn clothes is hidden (body_hide_boots+pants...)
