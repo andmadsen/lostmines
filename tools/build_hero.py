@@ -7,6 +7,7 @@ The body uses the "mixamo" rig, so all Mixamo animations work (the game
 retargets them from Mixamo's T-pose to MakeHuman's rest pose).
 """
 import importlib
+import math
 import json
 import os
 import sys
@@ -74,8 +75,8 @@ def _material(kind, colour):
     bsdf = nt.nodes.get("Principled BSDF")
     bsdf.inputs["Base Color"].default_value = (*colour, 1.0)
     metal = kind in ("chain", "steel", "gold")
-    bsdf.inputs["Metallic"].default_value = 1.0 if metal else 0.0
-    bsdf.inputs["Roughness"].default_value = {"chain": 0.45, "steel": 0.32, "gold": 0.3, "leather": 0.62, "leather_dark": 0.6, "cloth": 0.9}[kind]
+    bsdf.inputs["Metallic"].default_value = (0.55 if kind == "steel" else 1.0) if metal else 0.0
+    bsdf.inputs["Roughness"].default_value = {"chain": 0.45, "steel": 0.42, "gold": 0.3, "leather": 0.62, "leather_dark": 0.6, "cloth": 0.9}[kind]
     tex = {"chain": "chain", "steel": "steel", "gold": "steel", "leather": "leather", "leather_dark": "leather", "cloth": "cloth"}[kind]
     scale = {"chain": 9.0, "steel": 2.0, "gold": 2.0, "leather": 3.0, "leather_dark": 3.0, "cloth": 10.0}[kind]
     uv = nt.nodes.new("ShaderNodeTexCoord")
@@ -329,6 +330,157 @@ def _snap_to_helpers(body, root):
                         brow_d = d
 
 
+# ---------------------------------------------------------------- rigid armour
+# Plates (cuirass, pauldrons, bracers...) are stiff: each piece is fitted to
+# the body once and then follows ONE bone 100%, so it never bends or drifts.
+# spec: {"id": outfit name, "file": gear glb, "fit": "chest"|"shoulders",
+#        "scale": extra size, "up": metres, "forward": metres, "drop": [names]}
+def _import_joined(path, drop=()):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    meshes = [o for o in new if o.type == "MESH" and not any(x in o.name for x in drop)]
+    others = [o.name for o in new if o not in meshes]
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in meshes:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if len(meshes) > 1:
+        bpy.ops.object.join()
+    ob = bpy.context.view_layer.objects.active
+    for n in others:
+        if n in bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[n])
+    return ob
+
+
+def _body_points(body, bones):
+    """(position, outward normal) of body vertices that mostly follow these bones."""
+    dom = _dominant_bones(body)
+    m3 = body.matrix_world.to_3x3()
+    return [(body.matrix_world @ v.co, (m3 @ v.normal).normalized()) for v, d in zip(body.data.vertices, dom) if d in bones]
+
+
+def _penetration(piece, pts, reach=0.09):
+    """Share of the covered body points that poke out through the piece.
+    A body point is under the piece if the piece is within `reach`; it is
+    safely covered if a ray from it, straight out of the skin, hits the piece."""
+    from mathutils.bvhtree import BVHTree
+    bvh = BVHTree.FromObject(piece, bpy.context.evaluated_depsgraph_get())
+    near = out = 0
+    for p, n in pts:
+        loc, _, _, dist = bvh.find_nearest(p)
+        if loc is None or dist > reach:
+            continue
+        near += 1
+        hit = bvh.ray_cast(p + n * 0.004, n, 0.25)
+        if hit[0] is None:
+            out += 1
+    return out / max(1, near), near
+
+
+def _grow(piece, centre, pts, sx=1.0, sy=1.0, sz=1.0, step=1.04, limit=1.6):
+    """Scale the piece about `centre` until the body no longer pokes through."""
+    import mathutils
+    total = 1.0
+    for _ in range(14):
+        frac, near = _penetration(piece, pts)
+        print(f"      try x{total:.2f}: {frac * 100:.1f}% of {near}")
+        if frac < 0.015 or total > limit:
+            break
+        f = mathutils.Vector((1 + (step - 1) * sx, 1 + (step - 1) * sy, 1 + (step - 1) * sz))
+        for v in piece.data.vertices:
+            v.co = centre + mathutils.Vector(((v.co - centre).x * f.x, (v.co - centre).y * f.y, (v.co - centre).z * f.z))
+        piece.data.update()
+        total *= step
+    print(f"    grown x{total:.2f}, poke-through {frac * 100:.1f}% of {near} points")
+
+
+def _weight_to(piece, rig, chooser):
+    for g in list(piece.vertex_groups):
+        piece.vertex_groups.remove(g)
+    groups = {}
+    for v in piece.data.vertices:
+        bone = chooser(v.co)
+        if bone not in groups:
+            groups[bone] = piece.vertex_groups.new(name=B + bone)
+        groups[bone].add([v.index], 1.0, "REPLACE")
+    piece.parent = rig
+    am = piece.modifiers.new("Armature", "ARMATURE")
+    am.object = rig
+
+
+def fit_rigid(body, spec):
+    import mathutils
+    rig = _rig_of(body)
+    ob = _import_joined(os.path.join(ROOT, "assets", "gear", spec["file"]), spec.get("drop", []))
+    ob.name = "outfit_" + spec["id"]
+    ob.data.name = ob.name
+    vs = ob.data.vertices
+    if spec.get("turn"):  # make the piece face -Y like the body (degrees about Z)
+        rz = mathutils.Matrix.Rotation(math.radians(spec["turn"]), 3, "Z")
+        for v in vs:
+            v.co = rz @ v.co
+    lo = mathutils.Vector((min(v.co.x for v in vs), min(v.co.y for v in vs), min(v.co.z for v in vs)))
+    hi = mathutils.Vector((max(v.co.x for v in vs), max(v.co.y for v in vs), max(v.co.z for v in vs)))
+    neck = _bone_head(rig, "Neck")
+    la, ra = _bone_head(rig, "LeftArm"), _bone_head(rig, "RightArm")
+    shoulder_w = abs(la.x - ra.x)
+    if spec["fit"] == "chest":
+        bones = TORSO | {"Hips"}
+        torso = _body_points(body, TORSO)
+        torso_w = max(p.x for p, _ in torso) - min(p.x for p, _ in torso)
+        s = torso_w / (hi.x - lo.x) * spec.get("scale", 1.05)
+        anchor = mathutils.Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, hi.z))   # top of the piece
+        target = mathutils.Vector((neck.x, sum(p.y for p, _ in torso) / len(torso), neck.z - 0.02))
+    elif spec["fit"] == "torso":  # cuirass with pauldrons and belt in one piece
+        bones = TORSO
+        hips = _bone_head(rig, "Hips")
+        torso = _body_points(body, {"Spine1", "Spine2"})
+        depth = max(p.y for p, _ in torso) - min(p.y for p, _ in torso)
+        s = depth / (hi.y - lo.y) * spec.get("scale", 1.12)
+        anchor = mathutils.Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, hi.z))
+        target = mathutils.Vector((neck.x, sum(p.y for p, _ in torso) / len(torso), neck.z + 0.05))
+    else:  # shoulders: the pair spans both shoulders
+        bones = SHOULDER | UPPERARM | {"Spine2"}
+        s = shoulder_w / (hi.x - lo.x) * spec.get("scale", 1.35)
+        anchor = mathutils.Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, hi.z))
+        target = mathutils.Vector((neck.x, (la.y + ra.y) / 2, neck.z + 0.06))
+    target += mathutils.Vector((0, -spec.get("forward", 0.0), spec.get("up", 0.0)))
+    for v in vs:
+        v.co = target + (v.co - anchor) * s
+    ob.data.update()
+    pts = _body_points(body, TORSO if spec["fit"] in ("chest", "torso") else SHOULDER)
+    centre = sum((p for p, _ in pts), mathutils.Vector()) / len(pts) if spec["fit"] != "shoulders" else target
+    if spec.get("grow", True):
+        _grow(ob, centre, pts, sz=0.3)
+    if spec["fit"] == "torso":
+        spine1, spine2 = _bone_head(rig, "Spine1").z, _bone_head(rig, "Spine2").z
+        hips_z = _bone_head(rig, "Hips").z
+        half = shoulder_w / 2
+        def pick(co):
+            dx = co.x - neck.x
+            if abs(dx) > half * 0.62 and co.z > spine2:
+                return "LeftShoulder" if dx * (la.x - neck.x) > 0 else "RightShoulder"
+            if co.z < (hips_z + spine1) / 2:
+                return "Hips"
+            return "Spine2" if co.z > spine2 - 0.04 else "Spine1"
+        _weight_to(ob, rig, pick)
+    elif spec["fit"] == "chest":
+        chest_z = _bone_head(rig, "Spine1").z
+        _weight_to(ob, rig, lambda co: "Spine2" if co.z > chest_z else "Spine1")
+    else:
+        mid = 0.35 * shoulder_w / 2
+        _weight_to(ob, rig, lambda co: "Spine2" if abs(co.x - neck.x) < mid else ("LeftShoulder" if (co.x - neck.x) * (la.x - neck.x) > 0 else "RightShoulder"))
+    if spec.get("material"):  # replace the model's own look, e.g. low-res or odd colours
+        ob.data.materials.clear()
+        ob.data.materials.append(_material(spec["material"], tuple(spec.get("color", (0.78, 0.8, 0.84)))))
+    print("  rigid:", ob.name, len(vs), "verts, scale", round(s, 3))
+    return ob
+
+
 def build(hero_id, out_path=None):
     heroes = {h["id"]: h for h in json.load(open(os.path.join(ROOT, "data", "heroes.json")))["heroes"]}
     body = heroes[hero_id]["body"]
@@ -351,9 +503,14 @@ def build(hero_id, out_path=None):
         if p:
             HumanService.add_mhclo_asset(p, bm, asset_type=atype, material_type="GAMEENGINE")
     for c in body.get("clothes", []):
-        p = find(c, "clothes")
+        asset = c["asset"] if isinstance(c, dict) else c
+        p = find(asset, "clothes")
         if p:
             HumanService.add_mhclo_asset(p, bm, asset_type="Clothes", material_type="GAMEENGINE")
+    # clothes must not cut holes in the skin: they can be taken off in game
+    for m in list(bm.modifiers):
+        if m.type == "MASK" and m.name != "Hide helpers":
+            bm.modifiers.remove(m)
 
     root = ExportService.create_character_copy(bm, name_suffix="_export")
     # the mixamo rig has no eye bones: eyes, brows and lashes follow the head
@@ -366,6 +523,14 @@ def build(hero_id, out_path=None):
             hg.add([v.index for v in o.data.vertices], 1.0, "REPLACE")
     eb = ObjectService.find_object_of_type_amongst_nearest_relatives(root, "Basemesh")
     _snap_to_helpers(eb, root)
+    # name each clothing mesh outfit_<id> so the game can show/hide it
+    for c in body.get("clothes", []):
+        if not isinstance(c, dict):
+            continue
+        for o in ObjectService.get_list_of_children(root):
+            if o.type == "MESH" and c["asset"] in o.name:
+                o.name = "outfit_" + c["id"]
+                print("  clothes:", o.name)
     ExportService.bake_modifiers_remove_helpers(eb, bake_masks=True, bake_subdiv=True, remove_helpers=True, also_proxy=True)
     # freeze the body shape (macro shape keys) so every engine shows it as built
     if eb.data.shape_keys:
@@ -378,6 +543,8 @@ def build(hero_id, out_path=None):
     make_outfits(eb, body.get("outfits", ["under_top", "under_legs", "boots", "gloves"]))
     for spec in body.get("armour", []):
         fit_armour(eb, spec)
+    for spec in body.get("rigid", []):
+        fit_rigid(eb, spec)
     bpy.ops.object.select_all(action="DESELECT")
     root.select_set(True)
     kids = ObjectService.get_list_of_children(root)

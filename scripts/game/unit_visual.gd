@@ -244,7 +244,9 @@ func _apply_tints(root: Node, tints: Dictionary) -> void:
 				var src := m.get_active_material(si)
 				if src is StandardMaterial3D:
 					var c := (src as StandardMaterial3D).duplicate() as StandardMaterial3D
-					c.albedo_color = Color.html(str(tints[key]))
+					var t = tints[key]
+					# a colour ("#5a3a24") tints; a number (1.8) brightens
+					c.albedo_color = Color(float(t), float(t), float(t)) if (t is float or t is int) else Color.html(str(t))
 					m.set_surface_override_material(si, c)
 
 

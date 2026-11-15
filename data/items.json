@@ -186,7 +186,8 @@
         "roughness": 0.75,
         "outfits": [
           "under_top",
-          "leather"
+          "leather",
+          "gloves_leather"
         ]
       }
     },
@@ -202,9 +203,8 @@
         "metallic": 0.85,
         "roughness": 0.45,
         "outfits": [
-          "under_top",
-          "noble",
-          "gloves"
+          "tunic_mail",
+          "gloves_leather"
         ]
       }
     },
@@ -220,9 +220,9 @@
         "metallic": 0.95,
         "roughness": 0.22,
         "outfits": [
-          "under_top",
-          "noble",
-          "gloves"
+          "tunic_mail",
+          "cuirass",
+          "gloves_leather"
         ]
       }
     },
