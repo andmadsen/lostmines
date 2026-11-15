@@ -223,7 +223,9 @@ func _show_outfits(equipment: Dictionary) -> void:
 	var meshes := model.find_children("outfit_*", "MeshInstance3D", true, false)
 	if meshes.is_empty():
 		return
-	var on: Array = look.get("outfits_always", ["under_top", "under_legs", "boots"]).duplicate()
+	var on: Array = look.get("outfits_always", ["under_legs", "boots"]).duplicate()
+	if str(equipment.get("armor", "")) == "":
+		on.append("under_top")
 	for slot in ["armor", "head", "off_hand"]:
 		var it := DataDB.item(str(equipment.get(slot, "")))
 		on.append_array(it.get("visual", {}).get("outfits", []))

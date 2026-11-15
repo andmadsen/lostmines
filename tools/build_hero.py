@@ -199,6 +199,136 @@ def make_outfits(body, wanted):
     return made
 
 
+# ---------------------------------------------------------------- armour models
+# Real armour from Sketchfab (assets/gear/*.glb): scaled so its neckline sits
+# at the hero's neck, pushed out wherever it would cut into the body, and
+# given the body's bone weights so it moves with every animation.
+def _rig_of(body):
+    for m in body.modifiers:
+        if m.type == "ARMATURE" and m.object:
+            return m.object
+    return body.parent
+
+
+def _bone_head(rig, name):
+    b = rig.data.bones.get(B + name)
+    return rig.matrix_world @ b.head_local if b else None
+
+
+def fit_armour(body, spec):
+    import mathutils
+    path = os.path.join(ROOT, "assets", "gear", spec["file"])
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    meshes = [o for o in new if o.type == "MESH" and not any(x in o.name for x in spec.get("drop", []))]
+    others = [o.name for o in new if o not in meshes]
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in meshes:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    # bake the importer's parent transforms into the meshes, then join them
+    bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if len(meshes) > 1:
+        bpy.ops.object.join()
+    ob = bpy.context.view_layer.objects.active
+    for n in others:
+        if n in bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[n])
+    ob.name = "outfit_" + spec["id"]
+    ob.data.name = ob.name
+    rig = _rig_of(body)
+    neck = _bone_head(rig, "Neck")
+    # the outfit's own neckline: given in the data, as a height in its file
+    pts = [v.co for v in ob.data.vertices]
+    top = max(p.z for p in pts)
+    neck_z = spec.get("neck", top)
+    s = neck.z / neck_z * spec.get("scale", 1.0)
+    for v in ob.data.vertices:
+        v.co = mathutils.Vector((v.co.x * s * spec.get("width", 1.0), v.co.y * s * spec.get("depth", 1.0), v.co.z * s))
+    # centre it on the neck (x) and the chest (y)
+    chest = _bone_head(rig, "Spine2")
+    xs = [v.co.x for v in ob.data.vertices]
+    ys = [v.co.y for v in ob.data.vertices if v.co.z > chest.z - 0.1]
+    dx = neck.x - (min(xs) + max(xs)) / 2
+    dy = chest.y - (min(ys) + max(ys)) / 2 + spec.get("forward", 0.0)
+    dz = spec.get("up", 0.0)
+    for v in ob.data.vertices:
+        v.co += mathutils.Vector((dx, dy, dz))
+    ob.data.update()
+    # push it out wherever it cuts into the body
+    hips_z = _bone_head(rig, "Hips").z + spec.get("wrap_above", 0.0)
+    vg = ob.vertex_groups.new(name="_wrap")
+    vg.add([v.index for v in ob.data.vertices if v.co.z > hips_z], 1.0, "REPLACE")
+    sw = ob.modifiers.new("fit", "SHRINKWRAP")
+    sw.vertex_group = "_wrap"
+    sw.target = body
+    sw.wrap_method = "NEAREST_SURFACEPOINT"
+    sw.wrap_mode = "OUTSIDE"
+    sw.offset = spec.get("gap", 0.014)
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.modifier_apply(modifier="fit")
+    # bone weights from the body
+    for g in body.vertex_groups:
+        if g.name.startswith(B) and g.name not in ob.vertex_groups:
+            ob.vertex_groups.new(name=g.name)
+    dt = ob.modifiers.new("weights", "DATA_TRANSFER")
+    dt.object = body
+    dt.use_vert_data = True
+    dt.data_types_verts = {"VGROUP_WEIGHTS"}
+    dt.vert_mapping = "POLYINTERP_NEAREST"
+    dt.layers_vgroup_select_src = "ALL"
+    dt.layers_vgroup_select_dst = "NAME"
+    bpy.ops.object.modifier_apply(modifier="weights")
+    for g in list(ob.vertex_groups):
+        if not g.name.startswith(B):
+            ob.vertex_groups.remove(g)
+    ob.parent = rig
+    am = ob.modifiers.new("Armature", "ARMATURE")
+    am.object = rig
+    print("  armour:", ob.name, len(ob.data.vertices), "verts, scale", round(s, 3))
+    return ob
+
+
+def _snap_to_helpers(body, root):
+    """Eyes, brows and lashes are fitted to the base shape; move each so it
+    sits on its helper geometry in the final (macro-shaped) body."""
+    import mathutils
+    dg = bpy.context.evaluated_depsgraph_get()
+    sk = body.data.shape_keys
+    basis = [v.co.copy() for v in body.data.vertices]
+    pos = [c.copy() for c in basis]
+    if sk:
+        for kb in sk.key_blocks[1:]:
+            if kb.value:
+                for i, d in enumerate(kb.data):
+                    pos[i] += (d.co - basis[i]) * kb.value
+    groups = {g.name: g.index for g in body.vertex_groups}
+    def centre(names):
+        idx = {groups[n] for n in names if n in groups}
+        pts = [body.matrix_world @ pos[v.index] for v in body.data.vertices if any(g.group in idx and g.weight > 0.5 for g in v.groups)]
+        return sum(pts, mathutils.Vector()) / len(pts) if pts else None
+    plan = [("low-poly", ["helper-l-eye", "helper-r-eye"]), ("high-poly", ["helper-l-eye", "helper-r-eye"]),
+            ("eyelashes", ["helper-l-eyelashes-1", "helper-l-eyelashes-2", "helper-r-eyelashes-1", "helper-r-eyelashes-2"])]
+    for o in ObjectService.get_list_of_children(root):
+        if o.type != "MESH":
+            continue
+        for key, names in plan:
+            if key in o.name:
+                target = centre(names)
+                oe = o.evaluated_get(dg).to_mesh()
+                cur = sum((o.matrix_world @ v.co for v in oe.vertices), mathutils.Vector()) / max(1, len(oe.vertices))
+                o.evaluated_get(dg).to_mesh_clear()
+                if target is not None:
+                    d = o.matrix_world.inverted().to_3x3() @ (target - cur)
+                    for v in o.data.vertices:
+                        v.co += d
+                    print("  snapped", o.name, [round(x, 3) for x in (target - cur)])
+                    if key == "eyelashes" or key.endswith("poly"):
+                        brow_d = d
+
+
 def build(hero_id, out_path=None):
     heroes = {h["id"]: h for h in json.load(open(os.path.join(ROOT, "data", "heroes.json")))["heroes"]}
     body = heroes[hero_id]["body"]
@@ -226,9 +356,28 @@ def build(hero_id, out_path=None):
             HumanService.add_mhclo_asset(p, bm, asset_type="Clothes", material_type="GAMEENGINE")
 
     root = ExportService.create_character_copy(bm, name_suffix="_export")
+    # the mixamo rig has no eye bones: eyes, brows and lashes follow the head
+    for o in ObjectService.get_list_of_children(root):
+        if o.type == "MESH" and any(k in o.name for k in ("low-poly", "high-poly", "eyebrows", "eyelashes")):
+            print("  head-weighted:", o.name, [g.name for g in o.vertex_groups][:6])
+            for g in list(o.vertex_groups):
+                o.vertex_groups.remove(g)
+            hg = o.vertex_groups.new(name=B + "Head")
+            hg.add([v.index for v in o.data.vertices], 1.0, "REPLACE")
     eb = ObjectService.find_object_of_type_amongst_nearest_relatives(root, "Basemesh")
+    _snap_to_helpers(eb, root)
     ExportService.bake_modifiers_remove_helpers(eb, bake_masks=True, bake_subdiv=True, remove_helpers=True, also_proxy=True)
-    make_outfits(eb, body.get("outfits", ["under_top", "under_legs", "boots", "gloves", "leather", "chain", "plate"]))
+    # freeze the body shape (macro shape keys) so every engine shows it as built
+    if eb.data.shape_keys:
+        eb.shape_key_add(name="final", from_mix=True)
+        keep = [v.co.copy() for v in eb.data.shape_keys.key_blocks["final"].data]
+        eb.shape_key_clear()
+        for v, c in zip(eb.data.vertices, keep):
+            v.co = c
+        print("  froze body shape keys")
+    make_outfits(eb, body.get("outfits", ["under_top", "under_legs", "boots", "gloves"]))
+    for spec in body.get("armour", []):
+        fit_armour(eb, spec)
     bpy.ops.object.select_all(action="DESELECT")
     root.select_set(True)
     kids = ObjectService.get_list_of_children(root)
@@ -238,7 +387,7 @@ def build(hero_id, out_path=None):
     bpy.context.view_layer.objects.active = root
     out_path = out_path or os.path.join(ROOT, "assets", "characters", hero_id + "_mh.glb")
     bpy.ops.export_scene.gltf(filepath=out_path, use_selection=True, export_format="GLB", export_animations=False,
-                              export_image_format="JPEG", export_jpeg_quality=90)
+                              export_image_format="AUTO")
     print("wrote", out_path)
     return out_path
 

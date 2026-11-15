@@ -20,8 +20,12 @@
         "hair": "#e8c66a",
         "scale": 1.0,
         "width": 1.0,
-        "model": "res://assets/characters/aurelia.fbx",
-        "animation_set": "sword_shield"
+        "model": "res://assets/characters/aurelia_mh.glb",
+        "animation_set": "sword_shield",
+        "model_old": "res://assets/characters/aurelia.fbx",
+        "tints": {
+          "hair": "#4a2e1c"
+        }
       },
       "equipment": {
         "main_hand": "greatsword",
@@ -70,9 +74,24 @@
         "eyelashes": "mindfront_eyelashes_01",
         "teeth": "teeth_base",
         "tongue": "tongue01",
-        "hair": "elvs_ashley_may_hair",
+        "hair": "elvs_daisy_hair",
         "hair_color": "#5a3a24",
-        "clothes": []
+        "clothes": [],
+        "outfits": [
+          "under_top",
+          "under_legs",
+          "boots",
+          "gloves",
+          "leather",
+          "chain"
+        ],
+        "armour": [
+          {
+            "id": "noble",
+            "file": "armor_noble_knight.glb",
+            "neck": 1.46
+          }
+        ]
       }
     },
     {

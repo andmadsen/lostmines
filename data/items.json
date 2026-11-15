@@ -185,6 +185,7 @@
         "metallic": 0.0,
         "roughness": 0.75,
         "outfits": [
+          "under_top",
           "leather"
         ]
       }
@@ -201,7 +202,8 @@
         "metallic": 0.85,
         "roughness": 0.45,
         "outfits": [
-          "chain",
+          "under_top",
+          "noble",
           "gloves"
         ]
       }
@@ -218,8 +220,8 @@
         "metallic": 0.95,
         "roughness": 0.22,
         "outfits": [
-          "plate",
-          "chain",
+          "under_top",
+          "noble",
           "gloves"
         ]
       }
