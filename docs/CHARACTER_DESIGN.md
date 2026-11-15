@@ -58,7 +58,7 @@ Target heights are for the finished hero in game.
 | Human | 1.65-1.85 m | by hero | 0.5-0.7 / 0.5 | 0.5-0.7 | 0.6-0.8 | 1.0 | Aurelia: 0.0 / 0.52, 0.68 / 0.52, 0.62, 0.7 |
 | Dwarf | 1.20-1.35 m | 1.0 / 0.75 | 0.9 / 0.85 | 0.0 | 0.1 | 0.92 | plus `targets`: upper/lower leg height decr 0.9/0.7, shoulder dist incr 0.7, torso horiz/depth incr 0.4, neck height decr 0.8, head-square 0.6, upperarm circ incr 0.6; generated beard. Keldrin: 1.37 m built, ~1.26 m in game |
 | Halfling | 0.95-1.05 m | by hero / 0.45 | 0.45 / 0.5 | 0.0 | 0.5 | 0.88 | adult face, just small (MakeHuman's lowest woman is 1.11 m). Pip: pointed ears (`ears/*-ear-shape-pointed` 0.9, `ear-scale-vert-incr` 0.4), `head-round` 0.4 |
-| High Elf | 1.70-1.85 m | by hero / 0.42 | 0.35 / 0.32 | 0.75 | 0.9 | 1.12 | slim; pointed ears `ears/*-ear-shape-pointed` 1.0 + `ear-scale-vert-incr` 0.8, `neck/measure-neck-height-incr` 0.3. Shirvani ~1.73 m |
+| High Elf | 1.70-1.85 m | by hero / 0.42 | 0.35 / 0.32 | 0.75 | 0.9 | 0.97 | slim; pointed ears `ears/*-ear-shape-pointed` 1.0 + `ear-scale-vert-incr` 0.8, `neck/measure-neck-height-incr` 0.3. Shirvani ~1.75 m (Aurelia ~1.70 m) |
 | Goblin (monster) | ~0.9 m | - | - | - | - | per model | Sketchfab model, same animations |
 
 A dwarf is *not* a scaled-down human: get the stockiness from the macros
@@ -165,5 +165,8 @@ Test plans (`tests/shot.gd`): `gearclose` (close-up from four sides; `LM_HERO`,
 * A cream shirt reads as bare skin in torchlight: use a warmer linen colour.
 * A front panel with spring bones over a long skirt got pushed behind the legs
   in wide stances: front panels hang without bones.
+* Measure height from the head bone (Head bone height x `look.scale`
+  + ~0.15 m), not from the body mesh: clothes split hidden skin off the body
+  and the mesh looks shorter (Shirvani came out 2 m tall).
 * Hair with a near-black texture cannot be tinted; pick a light (blond/grey)
   hair and tint it.

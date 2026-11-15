@@ -237,7 +237,7 @@ Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 ### Staffs and spellcasting
 
 A staff is held upright in the LEFT hand and never put away (`quarterstaff`:
-`"hand": "left", "sheathe": false, "rotation": [0, 0, -90], "grip": 0.6`), so
+`"hand": "left", "sheathe": false, "rotation": [0, 0, -110], "grip": 0.6`), so
 the right hand is free to cast - like the reference art. The `caster_pack` set:
 
 * idle/walk are the calm, upright unarmed ones (the pack's own idle is a wide

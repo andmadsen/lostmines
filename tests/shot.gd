@@ -425,6 +425,24 @@ func _process(_d: float) -> void:
 				_save("walk_%d" % i)
 		if frame == 66:
 			get_tree().quit()
+	elif plan == "lineup":
+		# the party side by side, facing the camera (heights, silhouettes)
+		if frame == 3:
+			for i in scene.party.size():
+				var u: Unit = scene.party[i]
+				u.global_position = Vector3(21.8 + i * 1.0, 0, 30)
+				u.rotation.y = 0.0
+				u.order_move(u.global_position)
+			scene.rig.focus(Vector3(23.3, 0.8, 30))
+			scene.rig._target_distance = 6.5
+			scene.rig.distance = 6.5
+			scene.rig.pitch = deg_to_rad(-6.0)
+			scene.rig.yaw = PI
+			scene.paused = false
+		if frame > 3 and scene.paused: scene.paused = false
+		if frame == 40:
+			_save("lineup")
+			get_tree().quit()
 	elif plan == "outfits":
 		# prints which outfit meshes a hero shows
 		if frame == 10:

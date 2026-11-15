@@ -528,7 +528,7 @@
       "look": {
         "skin": "#efd2b8",
         "hair": "#e6e0c8",
-        "scale": 1.12,
+        "scale": 0.97,
         "model": "res://assets/characters/shirvani_mh.glb",
         "animation_set": "caster_pack",
         "tints": {
