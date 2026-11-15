@@ -91,7 +91,8 @@ Shirvani); steel the martial one (Aurelia).
 ## 6. Gear rules
 
 * One-handed weapons hang at the **left hip**, two-handed weapons and staffs on
-  the **back**, bows stay in hand. Shields are strapped to the left forearm.
+  the **back**, bows stay in hand. Shields are held upright across the left forearm in combat
+  and hang on the back when the weapon is put away.
 * Weapon sizes are real sizes (longsword ~1.0 m, mace ~0.6-0.7 m, greatsword
   ~1.4 m); the fitter scales the model to `length`.
 * Helmets are **not drawn** for now (`data/settings.json`); they count in the

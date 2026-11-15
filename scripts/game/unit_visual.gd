@@ -47,7 +47,10 @@ var _main_weapon: Node3D = null
 var _main_slot: Node3D = null      ## the hand the main weapon is held in
 var hip_slot: Node3D = null
 var _slot_fix: Dictionary = {}   ## per bone: turns Mixamo-tuned grips onto other rigs
-var shield_slot: Node3D = null   ## forearm strap for shields (if the rig defines it)       ## belt: where one-handed weapons hang when sheathed
+var shield_slot: Node3D = null   ## forearm strap for shields (if the rig defines it)
+var shield_back: Node3D = null   ## where the shield hangs while the weapon is put away
+var _shield: Node3D = null
+var _grip: Dictionary = {}       ## belt: where one-handed weapons hang when sheathed
 var _sheath_slot: Node3D = null    ## back_slot or hip_slot for the current weapon
 var _main_sheathes := true         ## false for bows: they stay in hand
 var attack_speed := 1.4
@@ -152,10 +155,12 @@ func _build_model(path: String) -> void:
 	_load_set(set_id)
 	var grip: Dictionary = aset.get("grip", {}).duplicate()
 	grip.merge(look.get("grip", {}), true)   # per-model fine tuning (bone axes differ between rigs)
+	_grip = grip
 	hand_r = _bone_slot(skel, "mixamorig_RightHand", grip.get("right", {}))
 	back_slot = _bone_slot(skel, "mixamorig_Spine2", grip.get("back", {"position": [0.0, 0.12, -0.17], "rotation": [0, 0, 200]}))
 	hip_slot = _bone_slot(skel, "mixamorig_Hips", grip.get("hip", {"position": [0.19, 0.06, 0.05], "rotation": [35, 0, 180]}))
 	shield_slot = _bone_slot(skel, "mixamorig_LeftForeArm", grip.get("shield", {"position": [0.0, 0.14, -0.07], "rotation": [0, 0, 0]})) if grip.has("shield") else null
+	shield_back = _bone_slot(skel, "mixamorig_Spine2", grip.get("shield_back", {})) if grip.has("shield_back") else null
 	armed = false
 	hand_l = _bone_slot(skel, "mixamorig_LeftHand", grip.get("left", {}))
 	head_slot = _bone_slot(skel, "mixamorig_Head", grip.get("head", {}))
@@ -402,6 +407,9 @@ func apply_equipment(equipment: Dictionary, fallback_armor_color := "") -> void:
 		_clear(hip_slot)
 	if shield_slot:
 		_clear(shield_slot)
+	if shield_back:
+		_clear(shield_back)
+	_shield = null
 	_main_weapon = null
 	held_light = null
 	if using_model:
@@ -459,9 +467,12 @@ func _attach_items(equipment: Dictionary) -> void:
 			hand_l.add_child(torch_mesh(off.get("visual", {})))
 		else:
 			if shield_slot:
+				# strapped across the forearm in combat, slung on the back otherwise
 				var sm := shield_mesh(off.get("visual", {}))
 				sm.transform = Transform3D.IDENTITY
-				shield_slot.add_child(sm)
+				_shield = Node3D.new()
+				_shield.add_child(sm)
+				_place_shield()
 			else:
 				hand_l.add_child(shield_mesh(off.get("visual", {})))
 	var helm := DataDB.item(str(equipment.get("head", "")))
@@ -645,6 +656,28 @@ func set_armed(v: bool) -> void:
 	armed = v
 	if _main_weapon and is_instance_valid(_main_weapon):
 		_main_weapon.reparent(_main_slot if v else _sheath_slot, false)
+	_place_shield()
+
+
+func _grip_of(key: String) -> Dictionary:
+	return _grip.get(key, {})
+
+
+## Puts the shield on the forearm (weapon drawn) or the back (put away).
+## grip.shield.turn turns it about its own face so it stands upright in guard.
+func _place_shield() -> void:
+	if _shield == null or not is_instance_valid(_shield) or shield_slot == null:
+		return
+	var on_arm := armed or shield_back == null
+	var target := shield_slot if on_arm else shield_back
+	if _shield.get_parent() == null:
+		target.add_child(_shield)
+	elif _shield.get_parent() != target:
+		_shield.reparent(target, false)
+	_shield.transform = Transform3D.IDENTITY
+	var g: Dictionary = _grip_of("shield" if on_arm else "shield_back")
+	# spin: about its own long axis (which side faces out), then turn: about its face
+	_shield.basis = Basis(Vector3.RIGHT, deg_to_rad(float(g.get("turn", 0.0)))) * Basis(Vector3.UP, deg_to_rad(float(g.get("spin", 0.0))))
 
 
 ## Seconds from the start of an attack until an arrow is released.

@@ -178,11 +178,16 @@ override a slot for one hero.
 * One-handed melee weapons hang at the LEFT hip by default (drawn with the right
   hand); two-handed weapons go on the back; bows/crossbows stay in hand
   (`sheathe` overrides: `true` = back, `"hip"`, `false`).
-* Shields are strapped to the left FOREARM (grip `shield` in the animation set:
-  `{"position": [-0.12, 0.12, -0.02], "rotation": [0, 90, 0]}`), centred below
-  the elbow. Per shield, `rotation` turns it about its own face ([0,0,0] /
-  [180,0,0] / [90,0,0]) until the point is down, and `flip` makes the painted
-  side face out.
+* Shields: strapped ACROSS the left forearm while the weapon is drawn (grip
+  `shield` in the animation set: position on the forearm, `turn: 90` turns it
+  about its face so it stands upright in the guard pose, `spin` turns it about
+  its long axis to choose which side faces out). While the weapon is put away
+  the shield hangs on the back (grip `shield_back` on Spine2: `[0, 0, 0.03]`,
+  rotation `[0, 90, 180]`, `spin: 180`). Per shield, `rotation` turns it about
+  its own face until the point is down and `flip` makes the painted side face
+  out (most models need neither).
+* Check shields in both states: `LM_EQUIP=off_hand:<shield> LM_PLAN=gearclose`
+  (drawn) and the same with `LM_SHEATHED=1` (on the back).
 
 Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 
