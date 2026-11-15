@@ -73,8 +73,8 @@ What the builder does, in order:
    shape (shape keys applied) so Godot shows exactly what Blender built;
 5. renames each clothing mesh to `outfit_<id>`, builds rigid pieces, panels
    and beards (`outfit_<id>` as well);
-6. moves the whole figure down so the soles stand at zero (leg targets lift the
-   feet; without this the hero floats), exports a `.glb`.
+6. moves the whole figure so the soles stand at zero (leg targets and the
+   lowest height lift the feet; skin hidden under boots counts too), exports a `.glb`.
 
 Quick look without the game: `python3 tools/preview_hero.py <glb> <out.png> pants,boots,beard,...`
 renders front, side, back, 3/4 and the face with only the listed outfits.
@@ -128,6 +128,18 @@ Above the belt it follows the chest; below it hangs straight and follows the
 hips plus a share (`legs`, 0.35) of both thighs. It is painted with `color`, a
 `trim` border and an `emblem` (`anvil`; add more outlines in `EMBLEMS`).
 
+Capes use the same generator with `"sides": ["back"]` and a shaped top:
+`neck_width` (width at the neck), `shoulder_drop` (how far down the shoulders
+widen to `width_top`), `width_bottom` (flare at the hem), `columns` (more for
+folds), `folds` + `fold_depth` (soft vertical folds deepening to the hem),
+`belt` (metres above the hips where it starts to hang straight), `legs` (how
+much the hem follows the thighs). Pip:
+
+    {"id": "cape", "sides": ["back"], "top": 0.95, "bottom": -0.35, "belt": 0.32,
+     "neck_width": 0.14, "shoulder_drop": 0.09, "width_top": 0.34, "width_bottom": 0.44,
+     "columns": 25, "folds": 5, "fold_depth": 0.03, "legs": 0.25,
+     "color": [0.22, 0.31, 0.15], "trim": [0.62, 0.47, 0.17], "border": 0.05}
+
 ## 3c. Beards
 
     "beards": [{"id": "beard", "length": 0.3, "thickness": 0.05, "top": 0.03,
@@ -142,6 +154,17 @@ it hangs straight. Braids are plaited lumps with metal rings (`ring_color`),
 laid on the beard at `x`. The face part follows the head, the hanging part the
 chest. Hair-strand texture is painted in `color` (no tint needed). MakeHuman's
 own beards are thin cards that cannot be made full - use this for dwarves.
+
+## 3d. Props (quiver)
+
+    "props": [{"type": "quiver", "id": "quiver", "x": -0.05, "up": -0.06, "tilt": -28,
+               "length": 0.42, "radius": 0.045, "arrows": 7, "color": [0.5, 0.3, 0.16]}]
+
+A leather quiver with arrows on the back (on top of a cape), slanted by `tilt`
+degrees (negative: top over the right shoulder), rigid on Spine2.
+
+Generated outfits (`under_top`, `leather`, `chain`, `plate`) are smoothed so
+they do not follow every curve of the body (`SMOOTH` in `build_hero.py`).
 
 ## 4. Equipment shows outfits (`data/items.json`)
 

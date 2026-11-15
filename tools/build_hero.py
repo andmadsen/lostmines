@@ -69,6 +69,9 @@ OUTFITS = {
 }
 
 
+SMOOTH = {"leather": 8, "chain": 6, "under_top": 3, "plate": 6}
+
+
 def _material(kind, colour):
     m = bpy.data.materials.new(f"{kind}_{len(bpy.data.materials)}")
     m.use_nodes = True
@@ -170,6 +173,15 @@ def make_outfits(body, wanted):
         bm.normal_update()
         for v in bm.verts:
             v.co += v.normal * push
+        # garments do not follow every curve of the body: relax the shape
+        smooth = SMOOTH.get(name, 0)
+        if smooth:
+            inner = [v for v in bm.verts if not v.is_boundary]
+            for _ in range(smooth):
+                bmesh.ops.smooth_vert(bm, verts=inner, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+            bm.normal_update()
+            for v in inner:
+                v.co += v.normal * 0.002
         # trim: the faces along the garment's edges
         ring = {v for e in bm.edges if e.is_boundary for v in e.verts}
         for _ in range(1):
@@ -658,7 +670,7 @@ def make_panel(body, spec, root):
     bottom = knee + (hips.z - knee) * spec.get("bottom", 0.0)
     belt = hips.z + spec.get("belt", 0.04)
     gap = spec.get("gap", 0.012)
-    rows, cols = 28, 9
+    rows, cols = 28, spec.get("columns", 9)
     wt, wb = spec.get("width_top", 0.32), spec.get("width_bottom", 0.26)
 
     def surface(x, z, side):
@@ -673,9 +685,20 @@ def make_panel(body, spec, root):
         return best
 
     made = []
-    for side in ([-1, 1] if spec.get("back", True) else [-1]):
+    sides = {"front": -1, "back": 1}
+    for side in [sides[n] for n in spec.get("sides", ["front", "back"] if spec.get("back", True) else ["front"])]:
         zs = [top + (bottom - top) * r / (rows - 1) for r in range(rows)]
-        widths = [wt if z >= belt else wb + (wt - wb) * max(0.0, (z - bottom)) / max(0.01, belt - bottom) * 0.0 for z in zs]
+        widths = [wt if z >= belt else wb for z in zs]
+        if spec.get("neck_width"):   # a cape: narrow at the neck, out over the shoulders, flaring to the hem
+            nw, drop = spec["neck_width"], spec.get("shoulder_drop", 0.1)
+            widths = []
+            for z in zs:
+                if z > top - drop:
+                    t = (top - z) / drop
+                    widths.append(nw + (wt - nw) * math.sin(t * math.pi / 2))
+                else:
+                    t = (top - drop - z) / max(0.01, top - drop - bottom)
+                    widths.append(wt + (wb - wt) * t)
         grid = []
         for z, w in zip(zs, widths):
             xs = [-w / 2 + w * c / (cols - 1) for c in range(cols)]
@@ -700,6 +723,14 @@ def make_panel(body, spec, root):
                     yp = grid[r - 1][c][1]
                     y = min(y, yp) if side < 0 else max(y, yp)
                     grid[r][c] = (x, y, z)
+        folds = spec.get("folds", 0)
+        if folds:   # hanging cloth falls in folds that deepen towards the hem
+            for r in range(rows):
+                z = zs[r]
+                depth = spec.get("fold_depth", 0.025) * max(0.0, min(1.0, (top - z) / max(0.01, top - bottom))) ** 0.7
+                for c in range(cols):
+                    x, y, zz = grid[r][c]
+                    grid[r][c] = (x, y + side * depth * (0.5 + 0.5 * math.sin(c / (cols - 1) * folds * 2 * math.pi)), zz)
         me = bpy.data.meshes.new("panel")
         bm = bmesh.new()
         vs = [[bm.verts.new((x, y + side * gap, z)) for (x, y, z) in row] for row in grid]
@@ -715,7 +746,8 @@ def make_panel(body, spec, root):
                     lp[uvl].uv = (u if side < 0 else 1 - u, 1 - ri / (rows - 1))
         bm.to_mesh(me)
         bm.free()
-        name = "outfit_" + spec["id"] + ("" if side < 0 else "_back")
+        only = len(spec.get("sides", ["front", "back"])) == 1
+        name = "outfit_" + spec["id"] + ("" if side < 0 or only else "_back")
         ob = bpy.data.objects.new(name, me)
         body.users_collection[0].objects.link(ob)
         # paint and material
@@ -984,6 +1016,73 @@ def make_beard(body, spec, root):
     return ob
 
 
+# ---------------------------------------------------------------- props
+# Small generated gear worn on the body (a quiver with arrows), rigid on one bone.
+def make_quiver(body, spec, root):
+    import bmesh
+    import mathutils
+    from mathutils.bvhtree import BVHTree
+    rig = _rig_of(body)
+    dg = bpy.context.evaluated_depsgraph_get()
+    trees = [BVHTree.FromObject(o, dg) for o in [body] + ObjectService.get_list_of_children(root)
+             if o.type == "MESH" and (o == body or o.name.startswith("outfit_")) and "hair" not in o.name.lower()]
+    sp2 = _bone_head(rig, "Spine2")
+    sp1 = _bone_head(rig, "Spine1")
+    z = (sp1.z + sp2.z) / 2 + spec.get("up", 0.0)
+    x = spec.get("x", -0.04)
+    back = None
+    for t in trees:
+        hit = t.ray_cast(mathutils.Vector((x, 1.5, z)), mathutils.Vector((0, -1, 0)))
+        if hit[0] is not None and (back is None or hit[0].y > back):
+            back = hit[0].y
+    back = back if back is not None else sp2.y + 0.15
+    L, R = spec.get("length", 0.5), spec.get("radius", 0.05)
+    centre = mathutils.Vector((x, back + R + spec.get("gap", 0.01), z))
+    tilt = mathutils.Matrix.Rotation(math.radians(spec.get("tilt", -25)), 3, "Y")
+    bm = bmesh.new()
+    bm.loops.layers.uv.new()   # create_cone fills it (calc_uvs); textures need UVs
+    ret = bmesh.ops.create_cone(bm, cap_ends=True, segments=14, radius1=R, radius2=R * 1.12, depth=L, calc_uvs=True)
+    for v in ret["verts"]:
+        v.co = centre + tilt @ v.co
+    leather = set(bm.faces)
+    wood, feather = set(), set()
+    n = spec.get("arrows", 7)
+    for i in range(n):
+        a = 2 * math.pi * i / n
+        off = mathutils.Vector((math.cos(a) * R * 0.5, math.sin(a) * R * 0.5, 0))
+        h = spec.get("arrow_out", 0.2) + 0.02 * (i % 3)
+        r = bmesh.ops.create_cone(bm, cap_ends=True, segments=5, radius1=0.004, radius2=0.004, depth=h, calc_uvs=True)
+        for v in r["verts"]:
+            v.co = centre + tilt @ (v.co + off + mathutils.Vector((0, 0, L / 2 + h / 2 - 0.02)))
+        wood |= {f for v in r["verts"] for f in v.link_faces}
+        for k in range(3):   # three vanes near the nock
+            b = a + k * 2 * math.pi / 3
+            d = mathutils.Vector((math.cos(b), math.sin(b), 0)) * 0.016
+            top = mathutils.Vector((0, 0, L / 2 + h - 0.025))
+            low = mathutils.Vector((0, 0, L / 2 + h - 0.085))
+            pts = [off + top, off + top + d, off + low + d * 0.6, off + low]
+            vs = [bm.verts.new(centre + tilt @ p) for p in pts]
+            f = bm.faces.new(vs)
+            feather.add(f)
+    me = bpy.data.meshes.new("quiver")
+    for f in bm.faces:
+        f.material_index = 2 if f in feather else (1 if f in wood else 0)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new("outfit_" + spec.get("id", "quiver"), me)
+    body.users_collection[0].objects.link(ob)
+    me.materials.append(_material("leather", tuple(spec.get("color", (0.36, 0.22, 0.12)))))
+    me.materials.append(_material("leather_dark", (0.45, 0.32, 0.2)))
+    me.materials.append(_material("cloth", (0.85, 0.83, 0.78)))
+    g = ob.vertex_groups.new(name=B + "Spine2")
+    g.add([v.index for v in me.vertices], 1.0, "REPLACE")
+    ob.parent = rig
+    am = ob.modifiers.new("Armature", "ARMATURE")
+    am.object = rig
+    print("  quiver:", ob.name, len(me.vertices), "verts")
+    return ob
+
+
 def build(hero_id, out_path=None):
     heroes = {h["id"]: h for h in json.load(open(os.path.join(ROOT, "data", "heroes.json")))["heroes"]}
     body = heroes[hero_id]["body"]
@@ -1078,8 +1177,12 @@ def build(hero_id, out_path=None):
         make_panel(eb, spec, root)
     for spec in body.get("beards", []):
         make_beard(eb, spec, root)
+    for spec in body.get("props", []):
+        if spec.get("type", "quiver") == "quiver":
+            make_quiver(eb, spec, root)
     # stand on the floor: body targets (shorter legs) lift the feet off zero
-    low = min((eb.matrix_world @ v.co).z for v in eb.data.vertices)
+    skin = [eb] + [o for o in ObjectService.get_list_of_children(root) if o.type == "MESH" and o.name.startswith("body_hide")]
+    low = min((o.matrix_world @ v.co).z for o in skin for v in o.data.vertices)   # feet under boots are split off
     if abs(low) > 0.002:
         root.location.z -= low
         print("  grounded: moved down", round(low, 3))

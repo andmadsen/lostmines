@@ -166,10 +166,20 @@
       "look": {
         "skin": "#e8b892",
         "hair": "#a0602a",
-        "scale": 0.72,
-        "width": 1.0,
-        "model": "res://assets/characters/pip.fbx",
-        "animation_set": "auto"
+        "scale": 0.88,
+        "model": "res://assets/characters/pip_mh.glb",
+        "animation_set": "auto",
+        "tints": {
+          "hair": "#7a3a1c",
+          "under_top": "#a8916a",
+          "pants": 1.2
+        },
+        "outfits_always": [
+          "pants",
+          "boots",
+          "cape",
+          "quiver"
+        ]
       },
       "equipment": {
         "main_hand": "shortbow",
@@ -188,7 +198,103 @@
       "alignment": "Chaotic Good",
       "age": 22,
       "bio": "Pip Swiftfoot grew up on the rooftops of Waterdeep, where a halfling learns to shoot straight and run faster. She joined the caravan on a whim and a bet she has not yet told anyone about. Small, quiet and sharp-eyed, she prefers to finish a fight before the goblins know she is there.",
-      "xp": 0
+      "xp": 0,
+      "body": {
+        "gender": 0.0,
+        "age": 0.45,
+        "muscle": 0.45,
+        "weight": 0.5,
+        "height": 0.0,
+        "proportions": 0.5,
+        "cupsize": 0.4,
+        "firmness": 0.6,
+        "race": {
+          "african": 0.0,
+          "asian": 0.0,
+          "caucasian": 1.0
+        },
+        "targets": {
+          "ears/l-ear-shape-pointed": 0.9,
+          "ears/r-ear-shape-pointed": 0.9,
+          "ears/l-ear-scale-vert-incr": 0.4,
+          "ears/r-ear-scale-vert-incr": 0.4,
+          "head/head-round": 0.4
+        },
+        "skin": "toigo_light_skin_female_freckles",
+        "eyes": "low-poly",
+        "eyebrows": "mindfront_eyebrows_05",
+        "eyelashes": "mindfront_eyelashes_01",
+        "teeth": "teeth_base",
+        "tongue": "tongue01",
+        "hair": "cortu_strawberry_cloud_hair",
+        "clothes": [
+          {
+            "id": "pants",
+            "asset": "rehmanpolanski_viking_pants"
+          },
+          {
+            "id": "boots",
+            "asset": "maciekg_leather_boots",
+            "push": 0.004
+          },
+          {
+            "id": "gloves_leather",
+            "asset": "toigo_gloves_short"
+          }
+        ],
+        "outfits": [
+          "under_top",
+          "leather"
+        ],
+        "panels": [
+          {
+            "id": "cape",
+            "sides": [
+              "back"
+            ],
+            "top": 0.95,
+            "bottom": -0.35,
+            "belt": 0.32,
+            "width_top": 0.34,
+            "width_bottom": 0.44,
+            "gap": 0.015,
+            "legs": 0.25,
+            "color": [
+              0.22,
+              0.31,
+              0.15
+            ],
+            "trim": [
+              0.62,
+              0.47,
+              0.17
+            ],
+            "border": 0.05,
+            "columns": 25,
+            "folds": 5,
+            "fold_depth": 0.03,
+            "neck_width": 0.14,
+            "shoulder_drop": 0.09
+          }
+        ],
+        "props": [
+          {
+            "type": "quiver",
+            "id": "quiver",
+            "x": -0.05,
+            "up": -0.06,
+            "tilt": -28,
+            "length": 0.42,
+            "radius": 0.045,
+            "gap": 0.0,
+            "color": [
+              0.5,
+              0.3,
+              0.16
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "keldrin",
