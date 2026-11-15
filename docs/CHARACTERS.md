@@ -152,6 +152,9 @@ twohand_pack, bow_pack, spell_pack). They work on every hero (retargeting).
 * `look.animation_set: "auto"` picks the set from what the hero holds, through
   the `auto` table: `one_hand`, `shield` (one-hander + shield), `two_hand`,
   `bow`, `unarmed`. Changing weapons changes the set at once.
+* While the weapon is put away the hero uses a relaxed `idle_calm` /
+  `walk_calm` (per set, or the shared `calm` entry: unarmed idle and walk);
+  the combat idle/walk come back when the weapon is drawn. Bows stay drawn.
 * Root motion is removed on load: walks keep their sway, attacks and deaths
   stay on the spot. The walk speed is measured from the walk's own travel, so
   feet do not slide.

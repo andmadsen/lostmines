@@ -39,6 +39,7 @@ var _attack_len := 1.0
 var _attacks: Array = []          ## "attack/attack", "attack/attack2"... picked at random
 var _attack_lens: Dictionary = {}
 var _set_id := ""
+var _walk_refs: Dictionary = {}
 var _skel: Skeleton3D
 var _model_path := ""
 var back_slot: Node3D = null      ## where the main weapon rests when sheathed
@@ -283,8 +284,10 @@ func _load_set(set_id: String) -> void:
 	for lib_name in anim_player.get_animation_library_list():
 		if str(lib_name) != "":
 			anim_player.remove_animation_library(lib_name)
-	for key in ["idle", "walk", "attack", "death", "cast"]:
-		var files = aset.get(key, "")
+	var calm: Dictionary = DataDB.animation_calm
+	_walk_refs.clear()
+	for key in ["idle", "walk", "attack", "death", "cast", "idle_calm", "walk_calm"]:
+		var files = aset.get(key, calm.get(key.trim_suffix("_calm"), "") if key.ends_with("_calm") else "")
 		var list: Array = files if files is Array else ([files] if str(files) != "" else [])
 		var lib := AnimationLibrary.new()
 		var n := 0
@@ -307,11 +310,13 @@ func _load_set(set_id: String) -> void:
 					for ti in anim.get_track_count():
 						var tp := anim.track_get_path(ti)
 						anim.track_set_path(ti, NodePath("%s:%s" % [skel_path, tp.get_concatenated_subnames()]))
-				var loop: bool = key in ["idle", "walk"]
+				var loop: bool = key in ["idle", "walk", "idle_calm", "walk_calm"]
 				var moved := _strip_root_motion(anim, loop)
-				if key == "walk" and moved > 0.3:
+				if key.begins_with("walk") and moved > 0.3:
 					# body scale is applied by the node above the model
-					_walk_ref_speed = moved / anim.length * s
+					_walk_refs[key] = moved / anim.length * s
+					if key == "walk":
+						_walk_ref_speed = _walk_refs[key]
 				anim.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
 				var name_: String = key if n == 0 else "%s%d" % [key, n + 1]
 				lib.add_animation(name_, anim)
@@ -326,7 +331,7 @@ func _load_set(set_id: String) -> void:
 		if n > 0:
 			anim_player.add_animation_library(key, lib)
 	anim_player.stop()
-	_play("idle", 0.0)
+	_play("idle_calm" if not armed and anim_player.has_animation("idle_calm/idle_calm") else "idle", 0.0)
 
 
 ## Removes the travel of the hips (the game moves the unit itself) but keeps
@@ -579,11 +584,14 @@ func _process(delta: float) -> void:
 			if _swing <= 0.0:
 				anim_player.speed_scale = 1.0
 			return
+		# weapon away: relaxed idle and walk (if the set has them)
+		var relaxed := not armed and anim_player.has_animation("idle_calm/idle_calm")
 		if walk_amount > 0.3:
-			_play("walk")
-			anim_player.speed_scale = clampf(move_speed / _walk_ref_speed, 0.5, 2.5)
+			var w := "walk_calm" if relaxed and anim_player.has_animation("walk_calm/walk_calm") else "walk"
+			_play(w)
+			anim_player.speed_scale = clampf(move_speed / float(_walk_refs.get(w, _walk_ref_speed)), 0.5, 2.5)
 		else:
-			_play("idle")
+			_play("idle_calm" if relaxed else "idle")
 			anim_player.speed_scale = 1.0
 		return
 	_phase += delta * 9.0 * walk_amount

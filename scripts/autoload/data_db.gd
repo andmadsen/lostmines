@@ -11,6 +11,7 @@ var heroes: Dictionary = {}
 var monsters: Dictionary = {}
 var items: Dictionary = {}
 var animation_sets: Dictionary = {}
+var animation_calm: Dictionary = {}   ## relaxed idle/walk used while the weapon is put away
 var animation_auto: Dictionary = {}   ## style -> set id ("one_hand", "shield", "two_hand", "bow", "unarmed")
 var spells: Dictionary = {}
 
@@ -43,6 +44,7 @@ func reload() -> void:
 	var anims: Dictionary = _load("animations")
 	animation_sets = _index(anims, "animation_sets")
 	animation_auto = anims.get("auto", {})
+	animation_calm = anims.get("calm", {})
 	spells = _index(_load("spells"), "spells")
 	for f in FILES:
 		_mtimes[f] = FileAccess.get_modified_time(_path(f))

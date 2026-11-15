@@ -438,5 +438,9 @@
     "two_hand": "two_hand",
     "bow": "bow",
     "unarmed": "unarmed"
+  },
+  "calm": {
+    "idle": "res://assets/animations/onehand/unarmed idle.fbx",
+    "walk": "res://assets/animations/onehand/unarmed walk forward.fbx"
   }
 }
