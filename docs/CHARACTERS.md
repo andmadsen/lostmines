@@ -199,6 +199,10 @@ twohand_pack, bow_pack, spell_pack). They work on every hero (retargeting).
 * Feet and toes are NOT direction-aligned in the retarget (both rest poses stand
   flat; aligning ankle-to-toe directions put the hero on tiptoe).
 
+* Helmets are not drawn for now (`data/settings.json` → `"show_helmets": false`).
+  They still count in the rules and show in the character sheet; set it to
+  `true` to draw them again (fitting is in `items.json`, `visual` of each helmet).
+
 ## 9. Known limits
 
 * MakeHuman hair has see-through strands in some lights.

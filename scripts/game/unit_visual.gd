@@ -457,6 +457,8 @@ func _attach_items(equipment: Dictionary) -> void:
 			else:
 				hand_l.add_child(shield_mesh(off.get("visual", {})))
 	var helm := DataDB.item(str(equipment.get("head", "")))
+	if not bool(DataDB.settings.get("show_helmets", true)):
+		helm = {}   # worn for the rules, just not drawn (data/settings.json)
 	if hair:
 		hair.visible = helm.is_empty()
 	if not helm.is_empty() and str(helm.get("visual", {}).get("model", "")) != "":

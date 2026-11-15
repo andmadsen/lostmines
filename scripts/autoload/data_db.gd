@@ -4,7 +4,7 @@ extends Node
 
 signal data_changed
 
-const FILES: Array[String] = ["heroes", "monsters", "items", "animations", "spells"]
+const FILES: Array[String] = ["heroes", "monsters", "items", "animations", "spells", "settings"]
 const POLL_SECONDS := 1.0
 
 var heroes: Dictionary = {}
@@ -14,6 +14,7 @@ var animation_sets: Dictionary = {}
 var animation_calm: Dictionary = {}   ## relaxed idle/walk used while the weapon is put away
 var animation_auto: Dictionary = {}   ## style -> set id ("one_hand", "shield", "two_hand", "bow", "unarmed")
 var spells: Dictionary = {}
+var settings: Dictionary = {}   ## data/settings.json (e.g. show_helmets)
 
 var _mtimes: Dictionary = {}
 var _poll := 0.0
@@ -46,6 +47,7 @@ func reload() -> void:
 	animation_auto = anims.get("auto", {})
 	animation_calm = anims.get("calm", {})
 	spells = _index(_load("spells"), "spells")
+	settings = _load("settings")
 	for f in FILES:
 		_mtimes[f] = FileAccess.get_modified_time(_path(f))
 

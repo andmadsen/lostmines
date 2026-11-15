@@ -1,0 +1,4 @@
+{
+  "_comment": "Game-wide display settings. show_helmets: draw helmets on the figures (they always count in the rules and the character sheet).",
+  "show_helmets": false
+}
