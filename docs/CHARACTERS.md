@@ -76,6 +76,7 @@ A `rigid` entry:
 | `material`, `color` | replace the model's own material with the project's `steel`/`leather`/`chain`/`cloth` look (use when the model's texture is low-res or off-colour) |
 | `drop` / `keep` | mesh names in the file to leave out / to use only (e.g. take just the `chestplate` of a full armour suit) |
 | `depth` | extra front-to-back size, room for the chest (1.15) |
+| `taper`, `taper_gap` | pull the lower part (share of the height, e.g. 0.45) in to the waist, `taper_gap` metres off the body - stops plates flaring at the bottom |
 | `shoulders_only` | with `fit: torso`: keep only the pauldron parts of a cuirass |
 
 Bone assignment (`fit: torso`): pauldron parts -> `LeftShoulder`/`RightShoulder`,
@@ -138,6 +139,8 @@ Close-up test: `LM_ITEMS="head:great_helm,off_hand:kite_shield" LM_PLAN=helms`.
 * Feet on the floor: `retarget.gd` shifts the hips per animation so the lowest
   foot stays as high above the floor as in the Mixamo source (bodies with other
   leg proportions sank ~8 cm before).
+* Feet and toes are NOT direction-aligned in the retarget (both rest poses stand
+  flat; aligning ankle-to-toe directions put the hero on tiptoe).
 
 ## 8. Known limits
 

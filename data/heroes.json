@@ -126,7 +126,9 @@
             ],
             "up": 0.05,
             "forward": 0.02,
-            "depth": 1.15
+            "depth": 1.15,
+            "taper": 0.45,
+            "taper_gap": 0.035
           },
           {
             "id": "pauldrons",

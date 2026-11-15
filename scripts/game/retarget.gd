@@ -177,6 +177,12 @@ static func _alignment(src: Skeleton3D, dst: Skeleton3D, pairs: Array) -> Dictio
 	for p in pairs:
 		var si: int = p[0]
 		var di: int = p[1]
+		# feet stand flat in both rest poses, but ankle-to-toe directions differ
+		# with proportions: aligning them would tip the hero onto the toes
+		var bn := dst.get_bone_name(di)
+		if bn.ends_with("Foot") or bn.contains("Toe"):
+			out[di] = Quaternion.IDENTITY
+			continue
 		var ds := _bone_dir(src, si)
 		var dt := _bone_dir(dst, di)
 		if ds == Vector3.ZERO or dt == Vector3.ZERO:
@@ -187,6 +193,9 @@ static func _alignment(src: Skeleton3D, dst: Skeleton3D, pairs: Array) -> Dictio
 	# parents are processed in any order: fill leaves again from parents
 	for p in pairs:
 		var di: int = p[1]
+		var bn2 := dst.get_bone_name(di)
+		if bn2.ends_with("Foot") or bn2.contains("Toe"):
+			continue
 		if _bone_dir(dst, di) == Vector3.ZERO:
 			var par := dst.get_bone_parent(di)
 			out[di] = out.get(par, Quaternion.IDENTITY)

@@ -533,6 +533,26 @@ def fit_rigid(body, spec):
     else:
         mid = 0.35 * shoulder_w / 2
         _weight_to(ob, rig, lambda co: "Spine2" if abs(co.x - neck.x) < mid else ("LeftShoulder" if (co.x - neck.x) * (la.x - neck.x) > 0 else "RightShoulder"))
+    if spec.get("taper"):  # pull the lower edge in to the waist (plates flare otherwise)
+        top_z = max(v.co.z for v in ob.data.vertices)
+        low_z = min(v.co.z for v in ob.data.vertices)
+        start = top_z - (top_z - low_z) * spec["taper"]
+        tg = ob.vertex_groups.new(name="_taper")
+        for v in ob.data.vertices:
+            if v.co.z < start:
+                tg.add([v.index], min(1.0, (start - v.co.z) / max(0.01, start - low_z) * 1.6), "REPLACE")
+        sw = ob.modifiers.new("taper", "SHRINKWRAP")
+        sw.target = body
+        sw.vertex_group = "_taper"
+        sw.wrap_method = "NEAREST_SURFACEPOINT"
+        sw.wrap_mode = "ON_SURFACE"
+        sw.offset = spec.get("taper_gap", 0.03)
+        mods = list(ob.modifiers)
+        bpy.context.view_layer.objects.active = ob
+        while ob.modifiers[0].name != "taper":
+            bpy.ops.object.modifier_move_up(modifier="taper")
+        bpy.ops.object.modifier_apply(modifier="taper")
+        ob.vertex_groups.remove(ob.vertex_groups["_taper"])
     if spec.get("material"):  # replace the model's own look, e.g. low-res or odd colours
         ob.data.materials.clear()
         ob.data.materials.append(_material(spec["material"], tuple(spec.get("color", (0.78, 0.8, 0.84)))))
