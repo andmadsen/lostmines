@@ -47,7 +47,7 @@
     },
     {
       "id": "pip",
-      "name": "Pip Quickfoot",
+      "name": "Pip Swiftfoot",
       "race": "Halfling",
       "class": "Rogue",
       "level": 1,
@@ -82,12 +82,12 @@
       "background": "Urchin",
       "alignment": "Chaotic Good",
       "age": 22,
-      "bio": "Pip Quickfoot grew up on the rooftops of Waterdeep, where a halfling learns to shoot straight and run faster. She joined the caravan on a whim and a bet she has not yet told anyone about. Small, quiet and sharp-eyed, she prefers to finish a fight before the goblins know she is there.",
+      "bio": "Pip Swiftfoot grew up on the rooftops of Waterdeep, where a halfling learns to shoot straight and run faster. She joined the caravan on a whim and a bet she has not yet told anyone about. Small, quiet and sharp-eyed, she prefers to finish a fight before the goblins know she is there.",
       "xp": 0
     },
     {
       "id": "keldrin",
-      "name": "Keldrin",
+      "name": "Keldrin Ironfist",
       "race": "Dwarf",
       "class": "Cleric",
       "level": 1,
@@ -130,8 +130,8 @@
     },
     {
       "id": "shirvani",
-      "name": "Shirvani",
-      "race": "Human",
+      "name": "Shirvani Everglow",
+      "race": "High Elf",
       "class": "Wizard",
       "level": 1,
       "abilities": {
@@ -164,7 +164,7 @@
       "background": "Sage",
       "alignment": "Neutral",
       "age": 31,
-      "bio": "Shirvani studied the old Phandelver Pact in the libraries of Candlekeep until the scrolls were no longer enough. The Forge of Spells is said to lie somewhere beneath the Sword Mountains, and she means to see it with her own eyes. She is curious, impatient with fools, and quicker with a Fire Bolt than with an apology.",
+      "bio": "Shirvani Everglow left the elven libraries of Evermeet to read the old Phandelver Pact where it was written, in the human halls of Candlekeep, until the scrolls were no longer enough. The Forge of Spells is said to lie somewhere beneath the Sword Mountains, and she means to see it with her own eyes. She is curious, impatient with fools, and quicker with a Fire Bolt than with an apology.",
       "xp": 0
     }
   ]
